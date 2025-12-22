@@ -1,10 +1,9 @@
 import { useState } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
-import { FaEnvelope, FaLock, FaSignInAlt, FaGoogle } from 'react-icons/fa';
+import { FaEnvelope, FaLock, FaSignInAlt, FaGoogle, FaExclamationTriangle } from 'react-icons/fa';
 import { auth, googleProvider } from '../firebase/firebase.config';
 import { signInWithPopup } from 'firebase/auth';
-import './Auth.css';
 
 const Login = () => {
     const [formData, setFormData] = useState({
@@ -26,6 +25,10 @@ const Login = () => {
     };
 
     const handleGoogleLogin = async () => {
+        if (!auth) {
+            alert("Firebase is not initialized. Please restart your development server to load the environment variables.");
+            return;
+        }
         try {
             const result = await signInWithPopup(auth, googleProvider);
             const user = result.user;
@@ -64,99 +67,141 @@ const Login = () => {
     };
 
     return (
-        <div className="auth-page">
-            <div className="auth-container">
-                <div className="auth-card">
-                    <div className="auth-header">
-                        <div className="auth-icon">🏛️</div>
-                        <h2>Welcome Back</h2>
-                        <p>Sign in to your account to continue</p>
+        <div className="min-h-screen grid lg:grid-cols-2 bg-white">
+            {/* Left Column: Visual / Branding */}
+            <div className="hidden lg:flex flex-col justify-center items-center bg-slate-900 text-white relative overflow-hidden p-12">
+                <div className="absolute inset-0 bg-gradient-to-br from-blue-600 to-indigo-900 opacity-90"></div>
+                <div className="absolute inset-0 bg-[url('https://images.unsplash.com/photo-1449824913935-59a10b8d2000?ixlib=rb-4.0.3&auto=format&fit=crop&w=1920&q=80')] bg-cover bg-center mix-blend-overlay opacity-30"></div>
+
+                <div className="relative z-10 max-w-lg text-center">
+                    <div className="text-6xl mb-8">🏛️</div>
+                    <h1 className="text-5xl font-extrabold mb-6 leading-tight">Building Better Cities Together</h1>
+                    <p className="text-xl text-blue-100 leading-relaxed text-center">
+                        Join the platform that empowers citizens to report issues and track resolutions in real-time.
+                    </p>
+                </div>
+
+                {/* Decorative Circles */}
+                <div className="absolute -bottom-24 -left-24 w-64 h-64 bg-blue-500 rounded-full mix-blend-multiply filter blur-3xl opacity-20 animate-blob"></div>
+                <div className="absolute -top-24 -right-24 w-64 h-64 bg-purple-500 rounded-full mix-blend-multiply filter blur-3xl opacity-20 animate-blob animation-delay-2000"></div>
+            </div>
+
+            {/* Right Column: Login Form */}
+            <div className="flex flex-col justify-center items-center p-8 sm:p-12 lg:p-16 bg-white">
+                <div className="w-full max-w-md space-y-8">
+                    <div className="text-center lg:text-left">
+                        <h2 className="text-3xl font-bold tracking-tight text-slate-900">Welcome Back</h2>
+                        <p className="mt-2 text-slate-600">Please enter your details to sign in.</p>
                     </div>
 
                     {error && (
-                        <div className="alert alert-error">
-                            {error}
+                        <div className="bg-red-50 border border-red-200 text-red-700 px-4 py-3 rounded-xl flex items-center gap-3 animate-fade-in">
+                            <FaExclamationTriangle className="flex-shrink-0" />
+                            <p className="text-sm font-medium">{error}</p>
                         </div>
                     )}
 
-                    <form onSubmit={handleSubmit} className="auth-form">
-                        <div className="form-group">
-                            <label className="form-label">
-                                <FaEnvelope /> Email Address
-                            </label>
-                            <input
-                                type="email"
-                                name="email"
-                                value={formData.email}
-                                onChange={handleChange}
-                                className="form-input"
-                                placeholder="your.email@example.com"
-                                required
-                            />
+                    <form onSubmit={handleSubmit} className="mt-8 space-y-6">
+                        <div className="space-y-5">
+                            <div>
+                                <label className="block text-sm font-semibold text-slate-700 mb-1.5 flex items-center gap-2">
+                                    Email Address
+                                </label>
+                                <div className="relative">
+                                    <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none text-slate-400">
+                                        <FaEnvelope />
+                                    </div>
+                                    <input
+                                        type="email"
+                                        name="email"
+                                        required
+                                        className="block w-full pl-10 pr-3 py-3 border border-slate-200 rounded-xl text-slate-900 placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all shadow-sm bg-slate-50 hover:bg-white"
+                                        placeholder="you@example.com"
+                                        value={formData.email}
+                                        onChange={handleChange}
+                                    />
+                                </div>
+                            </div>
+
+                            <div>
+                                <label className="block text-sm font-semibold text-slate-700 mb-1.5 flex items-center gap-2">
+                                    Password
+                                </label>
+                                <div className="relative">
+                                    <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none text-slate-400">
+                                        <FaLock />
+                                    </div>
+                                    <input
+                                        type="password"
+                                        name="password"
+                                        required
+                                        className="block w-full pl-10 pr-3 py-3 border border-slate-200 rounded-xl text-slate-900 placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all shadow-sm bg-slate-50 hover:bg-white"
+                                        placeholder="••••••••"
+                                        value={formData.password}
+                                        onChange={handleChange}
+                                    />
+                                </div>
+                                <div className="flex justify-end mt-2">
+                                    <a href="#" className="text-sm font-medium text-blue-600 hover:text-blue-500 hover:underline">
+                                        Forgot password?
+                                    </a>
+                                </div>
+                            </div>
                         </div>
 
-                        <div className="form-group">
-                            <label className="form-label">
-                                <FaLock /> Password
-                            </label>
-                            <input
-                                type="password"
-                                name="password"
-                                value={formData.password}
-                                onChange={handleChange}
-                                className="form-input"
-                                placeholder="Enter your password"
-                                required
-                            />
+                        <div className="space-y-4">
+                            <button
+                                type="submit"
+                                disabled={isLoading}
+                                className="w-full flex justify-center items-center py-3.5 px-4 border border-transparent rounded-xl shadow-lg text-sm font-bold text-white bg-blue-600 hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500 transition-all hover:shadow-blue-500/30 hover:-translate-y-0.5 disabled:opacity-70 disabled:cursor-not-allowed"
+                            >
+                                {isLoading ? (
+                                    <div className="w-5 h-5 border-2 border-white/30 border-t-white rounded-full animate-spin"></div>
+                                ) : (
+                                    <>
+                                        Sign In <FaSignInAlt className="ml-2" />
+                                    </>
+                                )}
+                            </button>
+
+                            <button
+                                type="button"
+                                onClick={handleGoogleLogin}
+                                className="w-full flex items-center justify-center gap-3 px-4 py-3.5 bg-white border border-slate-200 rounded-xl text-slate-700 font-bold hover:bg-slate-50 hover:border-slate-300 transition-all shadow-sm hover:shadow-md"
+                            >
+                                <FaGoogle className="text-red-500 text-lg" />
+                                <span>Sign in with Google</span>
+                            </button>
                         </div>
-
-                        <button
-                            type="submit"
-                            className="btn btn-primary w-full btn-lg mb-4"
-                            disabled={isLoading}
-                        >
-                            {isLoading ? (
-                                <div className="spinner" style={{ width: '20px', height: '20px', borderWidth: '2px' }}></div>
-                            ) : (
-                                <>
-                                    <FaSignInAlt /> Sign In
-                                </>
-                            )}
-                        </button>
-
-                        <div className="relative flex py-2 mb-4 items-center">
-                            <div className="flex-grow border-t border-gray-200"></div>
-                            <span className="flex-shrink-0 mx-4 text-gray-400 text-sm font-medium">OR</span>
-                            <div className="flex-grow border-t border-gray-200"></div>
-                        </div>
-
-                        <button
-                            type="button"
-                            onClick={handleGoogleLogin}
-                            className="w-full flex items-center justify-center gap-2 px-4 py-3 bg-white border border-gray-200 rounded-xl text-gray-700 font-semibold hover:bg-gray-50 hover:border-gray-300 transition-all shadow-sm"
-                        >
-                            <FaGoogle className="text-red-500" /> Sign in with Google
-                        </button>
                     </form>
 
-                    <div className="auth-footer">
-                        <p>Don't have an account? <Link to="/register">Create Account</Link></p>
-                    </div>
+                    <p className="mt-8 text-center text-sm text-slate-600">
+                        Don't have an account?{' '}
+                        <Link to="/register" className="font-bold text-blue-600 hover:text-blue-500 hover:underline transition-colors">
+                            Create free account
+                        </Link>
+                    </p>
 
-                    <div className="demo-credentials">
-                        <h4>Demo Credentials:</h4>
-                        <div className="demo-grid">
-                            <div>
-                                <strong>Admin:</strong><br />
-                                admin@test.com / admin123
-                            </div>
-                            <div>
-                                <strong>Staff:</strong><br />
-                                staff@test.com / staff123
-                            </div>
-                            <div>
-                                <strong>Citizen:</strong><br />
-                                citizen@test.com / citizen123
+                    <div className="mt-10 pt-6 border-t border-slate-100">
+                        <div className="bg-slate-50 p-4 rounded-xl border border-slate-100">
+                            <h4 className="text-xs font-bold text-slate-500 uppercase tracking-wider mb-3">Demo Credentials</h4>
+                            <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 text-xs">
+                                <div className="p-2 bg-white rounded border border-slate-100 shadow-sm">
+                                    <span className="block font-bold text-slate-800">Admin</span>
+                                    <span className="text-slate-500">admin@test.com</span>
+                                    <br />
+                                    <span className="text-slate-400 font-mono">admin123</span>
+                                </div>
+                                <div className="p-2 bg-white rounded border border-slate-100 shadow-sm">
+                                    <span className="block font-bold text-slate-800">Staff</span>
+                                    <span className="text-slate-500">staff@test.com</span>
+                                    <br />
+                                    <span className="text-slate-400 font-mono">staff123</span>
+                                </div>
+                                <div className="p-2 bg-white rounded border border-slate-100 shadow-sm sm:col-span-2">
+                                    <span className="block font-bold text-slate-800">Citizen</span>
+                                    <span className="text-slate-500">citizen@test.com / citizen123</span>
+                                </div>
                             </div>
                         </div>
                     </div>

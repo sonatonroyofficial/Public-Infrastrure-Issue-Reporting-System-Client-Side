@@ -12,10 +12,24 @@ const firebaseConfig = {
     appId: import.meta.env.VITE_FIREBASE_APP_ID
 };
 
-// Initialize Firebase
-const app = initializeApp(firebaseConfig);
-const auth = getAuth(app);
-const googleProvider = new GoogleAuthProvider();
+let app;
+let auth;
+let googleProvider;
 
+try {
+    // Check if configuration is present to avoid crash on load
+    if (!firebaseConfig.apiKey) {
+        console.warn("Firebase configuration is missing. Please check your .env.local file and restart the development server.");
+    } else {
+        // Initialize Firebase only if config is present
+        app = initializeApp(firebaseConfig);
+        auth = getAuth(app);
+        googleProvider = new GoogleAuthProvider();
+    }
+} catch (error) {
+    console.error("Error initializing Firebase:", error);
+}
+
+// Export safe fallbacks if initialization failed to prevent app crash
 export { auth, googleProvider };
 export default app;
