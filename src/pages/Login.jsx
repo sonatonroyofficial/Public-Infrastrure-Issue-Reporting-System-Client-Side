@@ -182,28 +182,8 @@ const Login = () => {
                         </Link>
                     </p>
 
-                    <div className="mt-10 pt-6 border-t border-slate-100">
-                        <div className="bg-slate-50 p-4 rounded-xl border border-slate-100">
-                            <h4 className="text-xs font-bold text-slate-500 uppercase tracking-wider mb-3">Demo Credentials</h4>
-                            <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 text-xs">
-                                <div className="p-2 bg-white rounded border border-slate-100 shadow-sm">
-                                    <span className="block font-bold text-slate-800">Admin</span>
-                                    <span className="text-slate-500">admin@test.com</span>
-                                    <br />
-                                    <span className="text-slate-400 font-mono">admin123</span>
-                                </div>
-                                <div className="p-2 bg-white rounded border border-slate-100 shadow-sm">
-                                    <span className="block font-bold text-slate-800">Staff</span>
-                                    <span className="text-slate-500">staff@test.com</span>
-                                    <br />
-                                    <span className="text-slate-400 font-mono">staff123</span>
-                                </div>
-                                <div className="p-2 bg-white rounded border border-slate-100 shadow-sm sm:col-span-2">
-                                    <span className="block font-bold text-slate-800">Citizen</span>
-                                    <span className="text-slate-500">citizen@test.com / citizen123</span>
-                                </div>
-                            </div>
-                        </div>
+                    <div className="mt-10 pt-6 border-t border-slate-100 text-center text-xs text-gray-400">
+                        &copy; 2025 Public Issue Reporting System. All rights reserved.
                     </div>
                 </div>
             </div>

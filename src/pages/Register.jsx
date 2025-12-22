@@ -1,7 +1,7 @@
 import { useState } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
-import { FaUser, FaEnvelope, FaLock, FaPhone, FaMapMarkerAlt, FaUserPlus, FaCrown, FaExclamationTriangle } from 'react-icons/fa';
+import { FaUser, FaEnvelope, FaLock, FaPhone, FaMapMarkerAlt, FaUserPlus, FaCrown, FaExclamationTriangle, FaCamera } from 'react-icons/fa';
 
 const Register = () => {
     const [formData, setFormData] = useState({
@@ -46,8 +46,25 @@ const Register = () => {
 
         setIsLoading(true);
 
-        const { confirmPassword, ...registerData } = formData;
-        const result = await register(registerData);
+        const { confirmPassword, photo, ...registerData } = formData;
+
+        let finalData = { ...registerData };
+
+        // Convert photo to Base64 if exists (simple solution)
+        if (photo) {
+            try {
+                const base64 = await new Promise((resolve) => {
+                    const reader = new FileReader();
+                    reader.onloadend = () => resolve(reader.result);
+                    reader.readAsDataURL(photo);
+                });
+                finalData.photo = base64;
+            } catch (err) {
+                console.error("Error reading file", err);
+            }
+        }
+
+        const result = await register(finalData);
 
         setIsLoading(false);
 
@@ -78,6 +95,24 @@ const Register = () => {
                     )}
 
                     <form className="space-y-6" onSubmit={handleSubmit}>
+                        {/* Profile Photo Upload UI */}
+                        <div className="flex flex-col items-center mb-6">
+                            <div className="relative">
+                                <div className="h-24 w-24 rounded-full bg-gray-100 flex items-center justify-center overflow-hidden border-2 border-dashed border-gray-300">
+                                    {formData.photo ? (
+                                        <img src={URL.createObjectURL(formData.photo)} alt="Preview" className="h-full w-full object-cover" />
+                                    ) : (
+                                        <FaUser className="text-3xl text-gray-400" />
+                                    )}
+                                </div>
+                                <label className="absolute bottom-0 right-0 h-8 w-8 bg-blue-600 rounded-full flex items-center justify-center cursor-pointer hover:bg-blue-700 transition-colors shadow-sm text-white">
+                                    <FaCamera className="text-xs" />
+                                    <input type="file" className="hidden" accept="image/*" onChange={(e) => setFormData({ ...formData, photo: e.target.files[0] })} />
+                                </label>
+                            </div>
+                            <span className="text-xs text-gray-500 mt-2">Upload Profile Photo</span>
+                        </div>
+
                         <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                             <div>
                                 <label className="block text-sm font-semibold text-slate-700 mb-1.5 flex items-center gap-2">
@@ -202,43 +237,27 @@ const Register = () => {
                             </div>
                         </div>
 
-                        <div>
-                            <label className="block text-sm font-semibold text-slate-700 mb-1.5">Account Type</label>
-                            <select
-                                name="role"
-                                value={formData.role}
-                                onChange={handleChange}
-                                className="block w-full px-4 py-2.5 border border-slate-200 rounded-xl text-slate-900 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent shadow-sm bg-white"
-                            >
-                                <option value="citizen">Citizen</option>
-                                <option value="staff">Government Staff</option>
-                                <option value="admin">Administrator</option>
-                            </select>
+                        <div className="bg-gradient-to-r from-purple-50 to-pink-50 border border-purple-100 p-4 rounded-xl">
+                            <label className="flex items-start gap-3 cursor-pointer">
+                                <div className="flex items-center h-5 mt-1">
+                                    <input
+                                        type="checkbox"
+                                        name="isPremium"
+                                        checked={formData.isPremium}
+                                        onChange={handleChange}
+                                        className="w-5 h-5 text-purple-600 border-gray-300 rounded focus:ring-purple-500"
+                                    />
+                                </div>
+                                <div>
+                                    <span className="font-bold text-purple-900 flex items-center gap-2">
+                                        <FaCrown className="text-amber-500" /> Activate Premium Account
+                                    </span>
+                                    <p className="text-sm text-purple-700 mt-1">
+                                        Premium users get priority handling and faster response times.
+                                    </p>
+                                </div>
+                            </label>
                         </div>
-
-                        {formData.role === 'citizen' && (
-                            <div className="bg-gradient-to-r from-purple-50 to-pink-50 border border-purple-100 p-4 rounded-xl">
-                                <label className="flex items-start gap-3 cursor-pointer">
-                                    <div className="flex items-center h-5 mt-1">
-                                        <input
-                                            type="checkbox"
-                                            name="isPremium"
-                                            checked={formData.isPremium}
-                                            onChange={handleChange}
-                                            className="w-5 h-5 text-purple-600 border-gray-300 rounded focus:ring-purple-500"
-                                        />
-                                    </div>
-                                    <div>
-                                        <span className="font-bold text-purple-900 flex items-center gap-2">
-                                            <FaCrown className="text-amber-500" /> Activate Premium Account
-                                        </span>
-                                        <p className="text-sm text-purple-700 mt-1">
-                                            Premium users get priority handling and faster response times for reported issues.
-                                        </p>
-                                    </div>
-                                </label>
-                            </div>
-                        )}
 
                         <button
                             type="submit"

@@ -42,34 +42,8 @@ const ManageStaff = () => {
         e.preventDefault();
         setFormLoading(true);
 
-        // STRATEGY: Create user using secondary firebase app to avoid logging out admin
-        let secondaryApp = null;
         try {
-            // 1. Create in Firebase
-            secondaryApp = initializeApp(firebaseConfig, "SecondaryApp");
-            const secondaryAuth = getAuth(secondaryApp);
-            const userCredential = await createUserWithEmailAndPassword(secondaryAuth, formData.email, formData.password);
-            await updateProfile(userCredential.user, { displayName: formData.name });
-
-            // 2. Create in MongoDB (via current authenticated admin session)
-            // Note: We use the `register` equivalent or just create via a special admin-create-user endpoint?
-            // Since we don't have a backend `create-staff` that bypasses auth, we have to rely on
-            // the `auth/register` endpoint usually. BUT `auth/register` logs us in.
-            // WORKAROUND: We will use a dedicated backend route that accepts the UID or just uses the email/password we just created?
-            // Actually, the `auth/register` route in backend CHECKS if user exists in Firebase.
-            // But wait, our backend `/register` expects to verify the token.
-            // Standard approach: Admin calls `POST /api/users` (create user).
-            // Let's assume we implement a generic "create user" for admin.
-            // Wait, I didn't verify if `POST /api/users` exists for Admin.
-            // Let's use `authAPI.register`? No, that returns a token and might mess up current session context if we store it.
-            // We need to just call the registration API but IGNORE the returned token/login.
-
-            await authAPI.register({
-                ...formData,
-                skipLogin: true // Backend doesn't support this flag yet but we can ignore the response token
-            });
-
-            // 3. Cleanup
+            await userAPI.createStaff(formData);
             alert('Staff account created successfully!');
             setIsAddModalOpen(false);
             setFormData({ name: '', email: '', password: '', phone: '', address: '', role: 'staff' });
@@ -77,9 +51,8 @@ const ManageStaff = () => {
 
         } catch (error) {
             console.error('Error creating staff:', error);
-            alert('Error creating staff: ' + (error.message || 'Unknown error'));
+            alert('Error creating staff: ' + (error.response?.data?.message || error.message));
         } finally {
-            if (secondaryApp) await secondaryApp.delete(); // Cleanup firebase app
             setFormLoading(false);
         }
     };

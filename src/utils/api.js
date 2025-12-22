@@ -66,6 +66,7 @@ export const userAPI = {
     updateUser: (id, data) => api.patch(`/users/${id}`, data),
     blockUser: (id, isBlocked) => api.patch(`/users/${id}/block`, { isBlocked }),
     deleteUser: (id) => api.delete(`/users/${id}`),
+    createStaff: (data) => api.post('/staff', data),
     getPayments: () => api.get('/payments'), // Adding this for Payments page
 };
 
