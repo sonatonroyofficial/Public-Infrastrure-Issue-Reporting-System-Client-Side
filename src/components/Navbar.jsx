@@ -1,70 +1,153 @@
-import React, { useContext } from 'react';
-import { Link, NavLink } from 'react-router-dom';
-import { AuthContext } from '../provider/AuthProvider';
+import { useState, useEffect, useRef } from 'react';
+import { Link, useNavigate } from 'react-router-dom';
+import { useAuth } from '../context/AuthContext';
+import {
+    FaUserCircle,
+    FaBars,
+    FaTimes,
+    FaSignOutAlt,
+    FaTachometerAlt,
+    FaCrown,
+    FaHome,
+    FaList,
+    FaInfoCircle,
+    FaEnvelope,
+    FaCaretDown
+} from 'react-icons/fa';
+import './Navbar.css';
 
 const Navbar = () => {
-    const { user, logOut } = useContext(AuthContext);
+    const { isAuthenticated, user, logout, isPremium } = useAuth();
+    const navigate = useNavigate();
+    const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
+    const [isProfileDropdownOpen, setIsProfileDropdownOpen] = useState(false);
+    const dropdownRef = useRef(null);
 
-    const handleLogOut = () => {
-        logOut()
-            .then(() => console.log("Logged out successfully"))
-            .catch(error => console.error(error));
+    useEffect(() => {
+        const handleClickOutside = (event) => {
+            if (dropdownRef.current && !dropdownRef.current.contains(event.target)) {
+                setIsProfileDropdownOpen(false);
+            }
+        };
+
+        document.addEventListener('mousedown', handleClickOutside);
+        return () => {
+            document.removeEventListener('mousedown', handleClickOutside);
+        };
+    }, []);
+
+    const handleLogout = () => {
+        logout();
+        navigate('/login');
+        setIsProfileDropdownOpen(false);
+        setIsMobileMenuOpen(false);
     };
 
-    const navOptions = <>
-        <li><NavLink to="/" className={({ isActive }) => isActive ? "text-primary font-bold" : "font-medium"}>Home</NavLink></li>
-        <li><NavLink to="/issues" className={({ isActive }) => isActive ? "text-primary font-bold" : "font-medium"}>All Issues</NavLink></li>
-        <li><NavLink to="/about" className={({ isActive }) => isActive ? "text-primary font-bold" : "font-medium"}>About</NavLink></li>
-        <li><NavLink to="/contact" className={({ isActive }) => isActive ? "text-primary font-bold" : "font-medium"}>Contact</NavLink></li>
-    </>;
+    const closeMobileMenu = () => {
+        setIsMobileMenuOpen(false);
+    };
+
+    const toggleProfileDropdown = () => {
+        setIsProfileDropdownOpen(!isProfileDropdownOpen);
+    };
 
     return (
-        <div className="navbar bg-base-100 shadow-sm sticky top-0 z-50 px-4 md:px-8">
-            <div className="navbar-start">
-                <div className="dropdown">
-                    <div tabIndex={0} role="button" className="btn btn-ghost lg:hidden">
-                        <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M4 6h16M4 12h8m-8 6h16" /></svg>
+        <nav className="navbar">
+            <div className="container navbar-container">
+                <Link to="/" className="navbar-logo" onClick={closeMobileMenu}>
+                    <div className="logo-icon">🏛️</div>
+                    <div className="logo-text">
+                        <span className="logo-main">InfraReport</span>
+                        <span className="logo-sub">Public Infrastructure</span>
                     </div>
-                    <ul tabIndex={0} className="menu menu-sm dropdown-content mt-3 z-[1] p-2 shadow bg-base-100 rounded-box w-52">
-                        {navOptions}
-                    </ul>
-                </div>
-                <Link to="/" className="btn btn-ghost text-xl md:text-2xl font-bold bg-gradient-to-r from-primary to-secondary bg-clip-text text-transparent">
-                    CivicConnect
                 </Link>
-            </div>
-            <div className="navbar-center hidden lg:flex">
-                <ul className="menu menu-horizontal px-1 gap-2">
-                    {navOptions}
-                </ul>
-            </div>
-            <div className="navbar-end gap-2">
-                {user ? (
-                    <div className="dropdown dropdown-end">
-                        <div tabIndex={0} role="button" className="btn btn-ghost btn-circle avatar">
-                            <div className="w-10 rounded-full">
-                                <img alt="User Profile" src={user?.photoURL || "https://img.daisyui.com/images/stock/photo-1534528741775-53994a69daeb.webp"} />
+
+                <div className={`navbar-menu ${isMobileMenuOpen ? 'active' : ''}`}>
+                    <Link to="/" className="nav-link" onClick={closeMobileMenu}>
+                        <FaHome /> Home
+                    </Link>
+                    <Link to="/issues" className="nav-link" onClick={closeMobileMenu}>
+                        <FaList /> All Issues
+                    </Link>
+                    <Link to="/about" className="nav-link" onClick={closeMobileMenu}>
+                        <FaInfoCircle /> About
+                    </Link>
+                    <Link to="/contact" className="nav-link" onClick={closeMobileMenu}>
+                        <FaEnvelope /> Contact
+                    </Link>
+
+                    {/* Mobile Only Auth Links */}
+                    <div className="mobile-auth-links">
+                        {isAuthenticated ? (
+                            <>
+                                <div className="mobile-user-info">
+                                    <FaUserCircle /> {user?.name}
+                                </div>
+                                <Link to={user?.role === 'citizen' ? '/my-issues' : '/dashboard'} className="nav-link" onClick={closeMobileMenu}>
+                                    <FaTachometerAlt /> Dashboard
+                                </Link>
+                                <button onClick={handleLogout} className="nav-link logout-btn-mobile">
+                                    <FaSignOutAlt /> Logout
+                                </button>
+                            </>
+                        ) : (
+                            <div className="mobile-auth-buttons">
+                                <Link to="/login" className="btn btn-ghost btn-sm" onClick={closeMobileMenu}>Login</Link>
+                                <Link to="/register" className="btn btn-primary btn-sm" onClick={closeMobileMenu}>Get Started</Link>
                             </div>
-                        </div>
-                        <ul tabIndex={0} className="menu menu-sm dropdown-content mt-3 z-[1] p-2 shadow bg-base-100 rounded-box w-52">
-                            <li>
-                                <a className="justify-between">
-                                    {user?.displayName || "User"}
-                                    <span className="badge">New</span>
-                                </a>
-                            </li>
-                            <li><Link to="/dashboard">Dashboard</Link></li>
-                            <li><button onClick={handleLogOut}>Logout</button></li>
-                        </ul>
+                        )}
                     </div>
-                ) : (
-                    <>
-                        <Link to="/login" className="btn btn-sm btn-ghost">Login</Link>
-                        <Link to="/register" className="btn btn-sm btn-primary text-white">Get Started</Link>
-                    </>
-                )}
+                </div>
+
+                <div className="navbar-actions">
+                    {isAuthenticated ? (
+                        <div className="navbar-user-dropdown" ref={dropdownRef}>
+                            <div
+                                className="user-profile-trigger"
+                                onClick={toggleProfileDropdown}
+                                title={user?.name}
+                            >
+                                <FaUserCircle className="user-avatar" />
+                                {isPremium && <FaCrown className="premium-badge-icon" />}
+                                <FaCaretDown className={`dropdown-caret ${isProfileDropdownOpen ? 'open' : ''}`} />
+                            </div>
+
+                            {isProfileDropdownOpen && (
+                                <div className="dropdown-menu">
+                                    <div className="dropdown-header">
+                                        <div className="dropdown-user-name">{user?.name}</div>
+                                        <div className="dropdown-user-role">{user?.role}</div>
+                                    </div>
+                                    <div className="dropdown-divider"></div>
+                                    <Link
+                                        to={user?.role === 'citizen' ? '/my-issues' : '/dashboard'}
+                                        className="dropdown-item"
+                                        onClick={() => setIsProfileDropdownOpen(false)}
+                                    >
+                                        <FaTachometerAlt /> Dashboard
+                                    </Link>
+                                    <button onClick={handleLogout} className="dropdown-item text-danger">
+                                        <FaSignOutAlt /> Logout
+                                    </button>
+                                </div>
+                            )}
+                        </div>
+                    ) : (
+                        <div className="auth-buttons desktop-only">
+                            <Link to="/login" className="btn btn-ghost btn-sm">Login</Link>
+                            <Link to="/register" className="btn btn-primary btn-sm">Get Started</Link>
+                        </div>
+                    )}
+
+                    <button
+                        className="mobile-menu-toggle"
+                        onClick={() => setIsMobileMenuOpen(!isMobileMenuOpen)}
+                    >
+                        {isMobileMenuOpen ? <FaTimes /> : <FaBars />}
+                    </button>
+                </div>
             </div>
-        </div>
+        </nav>
     );
 };
 
