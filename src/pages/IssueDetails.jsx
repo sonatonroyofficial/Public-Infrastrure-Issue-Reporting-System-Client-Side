@@ -222,50 +222,64 @@ const IssueDetails = () => {
                                     {[...issue.statusHistory].reverse().map((history, index) => {
                                         let icon;
                                         let bgColor;
+                                        let badgeColor;
 
                                         switch (history.status) {
                                             case 'resolved':
-                                                icon = <FaCheckCircle className="text-white" />;
+                                                icon = <FaCheckCircle className="text-white text-lg" />;
                                                 bgColor = 'bg-emerald-500';
+                                                badgeColor = 'bg-emerald-100 text-emerald-800 border-emerald-200';
                                                 break;
                                             case 'in-progress':
-                                                icon = <FaExclamationTriangle className="text-white" />;
+                                                icon = <FaClock className="text-white text-lg" />;
                                                 bgColor = 'bg-blue-500';
+                                                badgeColor = 'bg-blue-100 text-blue-800 border-blue-200';
                                                 break;
                                             case 'assigned':
-                                                icon = <FaUser className="text-white" />;
+                                                icon = <FaUser className="text-white text-lg" />;
                                                 bgColor = 'bg-indigo-500';
+                                                badgeColor = 'bg-indigo-100 text-indigo-800 border-indigo-200';
                                                 break;
                                             case 'closed':
-                                                icon = <FaCheckCircle className="text-white" />;
+                                                icon = <FaCheckCircle className="text-white text-lg" />;
                                                 bgColor = 'bg-gray-600';
+                                                badgeColor = 'bg-gray-100 text-gray-800 border-gray-200';
                                                 break;
                                             default: // pending
-                                                icon = <FaExclamationTriangle className="text-white" />;
+                                                icon = <FaExclamationTriangle className="text-white text-lg" />;
                                                 bgColor = 'bg-amber-500';
+                                                badgeColor = 'bg-amber-100 text-amber-800 border-amber-200';
                                         }
 
                                         return (
-                                            <div key={index} className="relative pl-20 transition-all hover:bg-gray-50 rounded-xl p-4 -ml-4">
-                                                {/* Timeline Dot/Icon */}
-                                                <div className={`absolute left-0 top-4 w-12 h-12 rounded-full flex items-center justify-center shadow-sm z-10 border-4 border-white ${bgColor}`}>
+                                            <div key={index} className="relative pl-20 transition-all hover:bg-gray-50 rounded-xl p-4 -ml-4 group">
+                                                {/* Stepper Dot/Icon */}
+                                                <div className={`absolute left-0 top-3 w-12 h-12 rounded-full flex items-center justify-center shadow-sm z-10 border-[3px] border-white ${bgColor} ring-1 ring-gray-100 group-hover:scale-110 transition-transform`}>
                                                     {icon}
                                                 </div>
 
-                                                <div className="flex flex-col sm:flex-row sm:justify-between sm:items-start gap-1 mb-2">
+                                                <div className="flex flex-col sm:flex-row sm:justify-between sm:items-start gap-1 mb-3">
                                                     <div>
-                                                        <h4 className="text-base font-bold text-gray-900 capitalize leading-none mb-1">
+                                                        {/* Status Badge */}
+                                                        <span className={`inline-flex items-center px-3 py-1 rounded-full text-xs font-bold uppercase tracking-wider border mb-2 ${badgeColor}`}>
                                                             {history.status.replace('-', ' ')}
-                                                        </h4>
-                                                        <span className="text-xs text-gray-500 font-medium bg-gray-100 px-2 py-0.5 rounded-full inline-block">
-                                                            Updated by: {history.updatedBy || 'System'}
                                                         </span>
+
+                                                        {/* User Info */}
+                                                        <div className="text-xs text-gray-500 font-medium ml-1 flex items-center gap-1">
+                                                            <FaUser className="text-gray-300" />
+                                                            {history.updatedByRole ? (
+                                                                <span className="capitalize font-bold text-gray-700">{history.updatedByRole}</span>
+                                                            ) : 'Updated by'}
+                                                            <span className="text-gray-400">•</span>
+                                                            {history.updatedBy || 'System'}
+                                                        </div>
                                                     </div>
-                                                    <span className="text-xs text-gray-400 font-medium whitespace-nowrap mt-1 sm:mt-0 flex items-center gap-1">
+
+                                                    {/* Date/Time */}
+                                                    <span className="text-xs text-gray-400 font-medium whitespace-nowrap mt-2 sm:mt-0 flex items-center gap-1.5 bg-gray-50 px-2 py-1 rounded border border-gray-100">
                                                         <FaCalendarAlt className="text-gray-300" />
                                                         {new Date(history.timestamp).toLocaleString(undefined, {
-                                                            weekday: 'short',
-                                                            year: 'numeric',
                                                             month: 'short',
                                                             day: 'numeric',
                                                             hour: '2-digit',
@@ -274,8 +288,11 @@ const IssueDetails = () => {
                                                     </span>
                                                 </div>
 
-                                                <div className="text-gray-600 text-sm bg-gray-50 p-3 rounded-lg border border-gray-100 italic">
-                                                    "{history.comment}"
+                                                {/* Message/Note */}
+                                                <div className="text-gray-700 text-sm bg-white p-3.5 rounded-lg border border-gray-200 shadow-sm relative">
+                                                    {/* Little arrow for bubble effect */}
+                                                    <div className="absolute top-[-6px] left-4 w-3 h-3 bg-white border-t border-l border-gray-200 transform rotate-45"></div>
+                                                    {history.comment}
                                                 </div>
                                             </div>
                                         );
