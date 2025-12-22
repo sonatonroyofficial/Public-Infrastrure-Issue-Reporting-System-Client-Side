@@ -8,6 +8,9 @@ import ReportIssue from "../pages/ReportIssue/ReportIssue";
 import DashboardLayout from "../layout/DashboardLayout";
 import Dashboard from "../pages/Dashboard/Dashboard";
 import ManageIssues from "../pages/Dashboard/ManageIssues";
+import About from "../pages/About/About";
+import Contact from "../pages/Contact/Contact";
+import AllIssues from "../pages/AllIssues/AllIssues";
 
 const router = createBrowserRouter([
     {
@@ -29,6 +32,18 @@ const router = createBrowserRouter([
             {
                 path: "/report",
                 element: <ReportIssue />,
+            },
+            {
+                path: "/about",
+                element: <About />,
+            },
+            {
+                path: "/contact",
+                element: <Contact />,
+            },
+            {
+                path: "/issues",
+                element: <AllIssues />,
             },
         ],
     },
