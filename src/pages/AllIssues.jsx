@@ -9,6 +9,11 @@ const AllIssues = () => {
     const { user, isAuthenticated } = useAuth();
     const [issues, setIssues] = useState([]);
     const [loading, setLoading] = useState(true);
+    const [pagination, setPagination] = useState({
+        currentPage: 1,
+        totalPages: 1,
+        totalIssues: 0
+    });
 
     // Filter States
     const [filters, setFilters] = useState({
@@ -18,36 +23,59 @@ const AllIssues = () => {
         search: ''
     });
 
+    // Debounce search and reload on filter/page change
     useEffect(() => {
-        // Debounce search to prevent too many API calls
         const timer = setTimeout(() => {
             loadIssues();
         }, 500);
-
         return () => clearTimeout(timer);
-    }, [filters]);
+    }, [filters, pagination.currentPage]);
 
     const loadIssues = async () => {
         setLoading(true);
         try {
-            // Clean filters to remove empty strings
             const activeFilters = Object.fromEntries(
                 Object.entries(filters).filter(([_, v]) => v !== '')
             );
+
+            // Add pagination params
+            activeFilters.page = pagination.currentPage;
+            activeFilters.limit = 6; // Limit per page
+
             const response = await issueAPI.getAllIssues(activeFilters);
             setIssues(response.data.issues || []);
+
+            if (response.data.pagination) {
+                setPagination(prev => ({
+                    ...prev,
+                    totalPages: response.data.pagination.totalPages,
+                    totalIssues: response.data.pagination.totalIssues
+                }));
+            }
         } catch (error) {
             console.error('Error loading issues:', error);
+            // Default empty if error
+            setIssues([]);
         } finally {
             setLoading(false);
         }
     };
 
     const handleFilterChange = (e) => {
+        const { name, value } = e.target;
         setFilters(prev => ({
             ...prev,
-            [e.target.name]: e.target.value
+            [name]: value
         }));
+        // Reset to page 1 on filter change
+        setPagination(prev => ({ ...prev, currentPage: 1 }));
+    };
+
+    const handlePageChange = (newPage) => {
+        if (newPage >= 1 && newPage <= pagination.totalPages) {
+            setPagination(prev => ({ ...prev, currentPage: newPage }));
+            window.scrollTo({ top: 0, behavior: 'smooth' });
+        }
     };
 
     const handleUpvote = async (e, issue) => {
@@ -193,82 +221,107 @@ const AllIssues = () => {
                         <p className="text-gray-500">Try adjusting your filters or search query.</p>
                     </div>
                 ) : (
-                    <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
-                        {issues.map((issue) => {
-                            const isOwner = user?.userId === issue.citizenId;
-                            const hasUpvoted = issue.upvotedBy?.includes(user?.userId);
+                    <>
+                        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8 mb-12">
+                            {issues.map((issue) => {
+                                const isOwner = user?.userId === issue.citizenId;
+                                const hasUpvoted = issue.upvotedBy?.includes(user?.userId);
 
-                            return (
-                                <div key={issue._id} className="bg-white rounded-2xl shadow-sm border border-gray-100 hover:shadow-xl hover:-translate-y-1 transition-all duration-300 flex flex-col h-full overflow-hidden group">
-                                    {/* Image */}
-                                    <div className="h-48 w-full bg-gray-100 relative overflow-hidden">
-                                        {issue.photos && issue.photos.length > 0 ? (
-                                            <img
-                                                src={issue.photos[0]}
-                                                alt={issue.title}
-                                                className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500"
-                                            />
-                                        ) : (
-                                            <div className="flex items-center justify-center h-full text-gray-300 text-4xl">📷</div>
-                                        )}
-                                        {/* Priority Badge */}
-                                        <div className="absolute top-4 left-4">
-                                            <span className={`px-2 py-1 rounded-md text-xs font-bold uppercase tracking-wider border shadow-sm ${getPriorityColor(issue.priority)} bg-white/90 backdrop-blur-sm`}>
-                                                {issue.priority}
-                                            </span>
+                                return (
+                                    <div key={issue._id} className="bg-white rounded-2xl shadow-sm border border-gray-100 hover:shadow-xl hover:-translate-y-1 transition-all duration-300 flex flex-col h-full overflow-hidden group">
+                                        {/* Image */}
+                                        <div className="h-48 w-full bg-gray-100 relative overflow-hidden">
+                                            {issue.photos && issue.photos.length > 0 ? (
+                                                <img
+                                                    src={issue.photos[0]}
+                                                    alt={issue.title}
+                                                    className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500"
+                                                />
+                                            ) : (
+                                                <div className="flex items-center justify-center h-full text-gray-300 text-4xl">📷</div>
+                                            )}
+                                            {/* Priority Badge */}
+                                            <div className="absolute top-4 left-4">
+                                                <span className={`px-2 py-1 rounded-md text-xs font-bold uppercase tracking-wider border shadow-sm ${getPriorityColor(issue.priority)} bg-white/90 backdrop-blur-sm`}>
+                                                    {issue.priority}
+                                                </span>
+                                            </div>
+                                        </div>
+
+                                        {/* Content */}
+                                        <div className="p-6 flex-1 flex flex-col">
+                                            <div className="flex justify-between items-start mb-3">
+                                                <span className={`px-2 py-0.5 rounded text-xs font-bold uppercase border ${getStatusColor(issue.status)}`}>
+                                                    {issue.status}
+                                                </span>
+                                                <span className="text-xs text-gray-500 font-medium bg-gray-50 px-2 py-1 rounded">
+                                                    {issue.category}
+                                                </span>
+                                            </div>
+
+                                            <h3 className="text-lg font-bold text-gray-900 mb-2 line-clamp-1" title={issue.title}>
+                                                <Link to={`/issues/${issue._id}`} className="hover:text-blue-600 transition-colors">
+                                                    {issue.title}
+                                                </Link>
+                                            </h3>
+
+                                            <div className="text-sm text-gray-500 mb-4 flex items-center gap-2">
+                                                <FaMapMarkerAlt className="text-red-400 flex-shrink-0" />
+                                                <span className="truncate">{issue.location.address}</span>
+                                            </div>
+
+                                            <div className="mt-auto pt-4 border-t border-gray-50 flex items-center justify-between gap-4">
+                                                {/* Upvote Button */}
+                                                <button
+                                                    onClick={(e) => handleUpvote(e, issue)}
+                                                    disabled={isOwner} // Disable if owner
+                                                    className={`flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-sm font-semibold transition-colors ${hasUpvoted
+                                                        ? 'bg-blue-600 text-white shadow-md'
+                                                        : 'bg-gray-50 text-gray-600 hover:bg-white hover:shadow hover:text-blue-600 border border-transparent hover:border-gray-200'
+                                                        } ${isOwner ? 'opacity-50 cursor-not-allowed' : ''}`}
+                                                    title={isOwner ? "You cannot upvote your own issue" : "Upvote"}
+                                                >
+                                                    <FaThumbsUp className={hasUpvoted ? '' : 'text-gray-400'} />
+                                                    <span>{issue.upvotes || 0}</span>
+                                                </button>
+
+                                                {/* View Details Button */}
+                                                <Link
+                                                    to={`/issues/${issue._id}`}
+                                                    className="px-4 py-2 bg-white border border-blue-200 text-blue-600 text-sm font-bold rounded-lg hover:bg-blue-50 transition-colors flex items-center gap-2"
+                                                >
+                                                    <FaEye /> Details
+                                                </Link>
+                                            </div>
                                         </div>
                                     </div>
+                                );
+                            })}
+                        </div>
 
-                                    {/* Content */}
-                                    <div className="p-6 flex-1 flex flex-col">
-                                        <div className="flex justify-between items-start mb-3">
-                                            <span className={`px-2 py-0.5 rounded text-xs font-bold uppercase border ${getStatusColor(issue.status)}`}>
-                                                {issue.status}
-                                            </span>
-                                            <span className="text-xs text-gray-500 font-medium bg-gray-50 px-2 py-1 rounded">
-                                                {issue.category}
-                                            </span>
-                                        </div>
-
-                                        <h3 className="text-lg font-bold text-gray-900 mb-2 line-clamp-1" title={issue.title}>
-                                            <Link to={`/issues/${issue._id}`} className="hover:text-blue-600 transition-colors">
-                                                {issue.title}
-                                            </Link>
-                                        </h3>
-
-                                        <div className="text-sm text-gray-500 mb-4 flex items-center gap-2">
-                                            <FaMapMarkerAlt className="text-red-400 flex-shrink-0" />
-                                            <span className="truncate">{issue.location.address}</span>
-                                        </div>
-
-                                        <div className="mt-auto pt-4 border-t border-gray-50 flex items-center justify-between gap-4">
-                                            {/* Upvote Button */}
-                                            <button
-                                                onClick={(e) => handleUpvote(e, issue)}
-                                                disabled={isOwner} // Disable if owner
-                                                className={`flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-sm font-semibold transition-colors ${hasUpvoted
-                                                    ? 'bg-blue-600 text-white shadow-md'
-                                                    : 'bg-gray-50 text-gray-600 hover:bg-white hover:shadow hover:text-blue-600 border border-transparent hover:border-gray-200'
-                                                    } ${isOwner ? 'opacity-50 cursor-not-allowed' : ''}`}
-                                                title={isOwner ? "You cannot upvote your own issue" : "Upvote"}
-                                            >
-                                                <FaThumbsUp className={hasUpvoted ? '' : 'text-gray-400'} />
-                                                <span>{issue.upvotes || 0}</span>
-                                            </button>
-
-                                            {/* View Details Button */}
-                                            <Link
-                                                to={`/issues/${issue._id}`}
-                                                className="px-4 py-2 bg-white border border-blue-200 text-blue-600 text-sm font-bold rounded-lg hover:bg-blue-50 transition-colors flex items-center gap-2"
-                                            >
-                                                <FaEye /> Details
-                                            </Link>
-                                        </div>
-                                    </div>
-                                </div>
-                            );
-                        })}
-                    </div>
+                        {/* Pagination Controls */}
+                        {pagination.totalPages > 1 && (
+                            <div className="flex justify-center items-center gap-4 py-8">
+                                <button
+                                    onClick={() => handlePageChange(pagination.currentPage - 1)}
+                                    disabled={pagination.currentPage === 1}
+                                    className="px-4 py-2 border border-gray-200 rounded-lg hover:bg-gray-50 disabled:opacity-50 disabled:cursor-not-allowed"
+                                >
+                                    Previous
+                                </button>
+                                <span className="text-gray-600">
+                                    Page {pagination.currentPage} of {pagination.totalPages}
+                                </span>
+                                <button
+                                    onClick={() => handlePageChange(pagination.currentPage + 1)}
+                                    disabled={pagination.currentPage === pagination.totalPages}
+                                    className="px-4 py-2 border border-gray-200 rounded-lg hover:bg-gray-50 disabled:opacity-50 disabled:cursor-not-allowed"
+                                >
+                                    Next
+                                </button>
+                            </div>
+                        )}
+                    </>
                 )}
             </div>
         </div>

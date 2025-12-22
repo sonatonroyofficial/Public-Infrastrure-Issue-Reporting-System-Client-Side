@@ -1,6 +1,8 @@
 import { useState, useEffect } from 'react';
 import { userAPI } from '../utils/api';
-import { FaMoneyBillWave, FaSearch, FaFilter } from 'react-icons/fa';
+import { FaMoneyBillWave, FaSearch, FaFilter, FaFileInvoice } from 'react-icons/fa';
+import { PDFDownloadLink } from '@react-pdf/renderer';
+import InvoiceDocument from '../components/InvoiceDocument';
 
 const Payments = () => {
     const [payments, setPayments] = useState([]);
@@ -40,7 +42,8 @@ const Payments = () => {
                             <th className="px-6 py-4 text-xs font-bold text-gray-500 uppercase">User</th>
                             <th className="px-6 py-4 text-xs font-bold text-gray-500 uppercase">Amount</th>
                             <th className="px-6 py-4 text-xs font-bold text-gray-500 uppercase">Date</th>
-                            <th className="px-6 py-4 text-xs font-bold text-gray-500 uppercase text-right">Status</th>
+                            <th className="px-6 py-4 text-xs font-bold text-gray-500 uppercase">Status</th>
+                            <th className="px-6 py-4 text-xs font-bold text-gray-500 uppercase text-right">Invoice</th>
                         </tr>
                     </thead>
                     <tbody className="divide-y divide-gray-100">
@@ -53,10 +56,21 @@ const Payments = () => {
                                 <td className="px-6 py-4 text-sm text-gray-700">{p.user}</td>
                                 <td className="px-6 py-4 font-mono font-medium text-gray-900">{p.amount} tk</td>
                                 <td className="px-6 py-4 text-sm text-gray-500">{new Date(p.date).toLocaleDateString()}</td>
-                                <td className="px-6 py-4 text-right">
+                                <td className="px-6 py-4">
                                     <span className="inline-flex px-2 py-1 rounded text-xs font-bold bg-green-100 text-green-700 uppercase">
                                         {p.status}
                                     </span>
+                                </td>
+                                <td className="px-6 py-4 text-right">
+                                    <PDFDownloadLink
+                                        document={<InvoiceDocument transaction={p} />}
+                                        fileName={`invoice_${p.id}.pdf`}
+                                        className="inline-flex items-center gap-2 px-3 py-1.5 text-xs font-bold text-blue-600 bg-blue-50 hover:bg-blue-100 rounded-lg transition-colors border border-blue-200"
+                                    >
+                                        {({ loading }) => (
+                                            loading ? 'Generating...' : <><FaFileInvoice /> Download</>
+                                        )}
+                                    </PDFDownloadLink>
                                 </td>
                             </tr>
                         ))}
