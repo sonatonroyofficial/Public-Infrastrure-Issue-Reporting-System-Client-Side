@@ -1,7 +1,7 @@
 import { useState } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
-import { FaEnvelope, FaLock, FaSignInAlt } from 'react-icons/fa';
+import { FaEnvelope, FaLock, FaSignInAlt, FaGoogle } from 'react-icons/fa';
 import './Auth.css';
 
 const Login = () => {
@@ -21,6 +21,11 @@ const Login = () => {
             [e.target.name]: e.target.value
         });
         setError('');
+    };
+
+    const handleGoogleLogin = () => {
+        // Placeholder for future Google Auth integration
+        alert("Google Login is coming soon! Please use email/password for now.");
     };
 
     const handleSubmit = async (e) => {
@@ -93,7 +98,7 @@ const Login = () => {
 
                         <button
                             type="submit"
-                            className="btn btn-primary w-full btn-lg"
+                            className="btn btn-primary w-full btn-lg mb-4"
                             disabled={isLoading}
                         >
                             {isLoading ? (
@@ -103,6 +108,20 @@ const Login = () => {
                                     <FaSignInAlt /> Sign In
                                 </>
                             )}
+                        </button>
+
+                        <div className="relative flex py-2 mb-4 items-center">
+                            <div className="flex-grow border-t border-gray-200"></div>
+                            <span className="flex-shrink-0 mx-4 text-gray-400 text-sm font-medium">OR</span>
+                            <div className="flex-grow border-t border-gray-200"></div>
+                        </div>
+
+                        <button
+                            type="button"
+                            onClick={handleGoogleLogin}
+                            className="w-full flex items-center justify-center gap-2 px-4 py-3 bg-white border border-gray-200 rounded-xl text-gray-700 font-semibold hover:bg-gray-50 hover:border-gray-300 transition-all shadow-sm"
+                        >
+                            <FaGoogle className="text-red-500" /> Sign in with Google
                         </button>
                     </form>
 
