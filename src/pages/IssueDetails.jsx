@@ -2,7 +2,7 @@ import { useState, useEffect } from 'react';
 import { useParams, Link, useNavigate } from 'react-router-dom';
 import { issueAPI } from '../utils/api';
 import { useAuth } from '../context/AuthContext';
-import { FaArrowLeft, FaMapMarkerAlt, FaCalendarAlt, FaUser, FaCheckCircle, FaExclamationTriangle, FaThumbsUp } from 'react-icons/fa';
+import { FaArrowLeft, FaMapMarkerAlt, FaCalendarAlt, FaUser, FaCheckCircle, FaExclamationTriangle, FaThumbsUp, FaClock } from 'react-icons/fa';
 
 const IssueDetails = () => {
     const { id } = useParams();
@@ -134,8 +134,8 @@ const IssueDetails = () => {
                                     onClick={handleUpvote}
                                     disabled={upvoteLoading || (isOwner)}
                                     className={`flex items-center gap-2 px-4 py-2 rounded-full font-bold shadow-lg transition-all transform hover:scale-105 active:scale-95 ${hasUpvoted
-                                            ? 'bg-blue-600 text-white'
-                                            : 'bg-white text-gray-700 hover:bg-gray-50'
+                                        ? 'bg-blue-600 text-white'
+                                        : 'bg-white text-gray-700 hover:bg-gray-50'
                                         } ${isOwner ? 'opacity-50 cursor-not-allowed' : ''}`}
                                 >
                                     <FaThumbsUp />
@@ -194,8 +194,8 @@ const IssueDetails = () => {
                                     onClick={handleUpvote}
                                     disabled={upvoteLoading || (isOwner)}
                                     className={`flex items-center gap-2 px-6 py-3 rounded-xl font-bold transition-all transform hover:-translate-y-1 ${hasUpvoted
-                                            ? 'bg-blue-600 text-white shadow-blue-200 shadow-lg'
-                                            : 'bg-white border-2 border-gray-200 text-gray-700 hover:border-blue-500 hover:text-blue-600'
+                                        ? 'bg-blue-600 text-white shadow-blue-200 shadow-lg'
+                                        : 'bg-white border-2 border-gray-200 text-gray-700 hover:border-blue-500 hover:text-blue-600'
                                         } ${isOwner ? 'opacity-50 cursor-not-allowed hover:transform-none' : ''}`}
                                     title={isOwner ? "You cannot upvote your own issue" : "Upvote this issue"}
                                 >
@@ -207,27 +207,85 @@ const IssueDetails = () => {
                     </div>
 
                     {/* Status History */}
-                    {issue.statusHistory && issue.statusHistory.length > 0 && (
-                        <div className="bg-gray-50 border-t border-gray-100 p-8 lg:p-10">
-                            <h3 className="text-xl font-bold text-gray-900 mb-6">Status Updates</h3>
-                            <div className="space-y-6">
-                                {issue.statusHistory.map((history, index) => (
-                                    <div key={index} className="relative pl-8 border-l-2 border-gray-200 last:border-0 pb-6 last:pb-0">
-                                        <div className={`absolute -left-[9px] top-0 w-4 h-4 rounded-full border-2 border-white ${index === 0 ? 'bg-blue-500' : 'bg-gray-300'}`}></div>
-                                        <div className="flex flex-col sm:flex-row sm:justify-between sm:items-start gap-2 mb-2">
-                                            <span className={`text-sm font-bold uppercase tracking-wide ${index === 0 ? 'text-gray-900' : 'text-gray-500'}`}>
-                                                {history.status}
-                                            </span>
-                                            <span className="text-xs text-gray-400 font-medium">
-                                                {new Date(history.timestamp).toLocaleString()}
-                                            </span>
-                                        </div>
-                                        <p className="text-gray-600">{history.comment}</p>
-                                    </div>
-                                ))}
+                    {/* Timeline / Tracking Section */}
+                    <div className="bg-white border-t border-gray-100 p-8 lg:p-10">
+                        <h3 className="text-xl font-bold text-gray-900 mb-8 flex items-center gap-2">
+                            <FaClock className="text-blue-600" /> Issue Timeline & Tracking
+                        </h3>
+
+                        {issue.statusHistory && issue.statusHistory.length > 0 ? (
+                            <div className="relative">
+                                {/* Vertical Line */}
+                                <div className="absolute left-6 top-4 bottom-4 w-0.5 bg-gray-200"></div>
+
+                                <div className="space-y-8">
+                                    {[...issue.statusHistory].reverse().map((history, index) => {
+                                        let icon;
+                                        let bgColor;
+
+                                        switch (history.status) {
+                                            case 'resolved':
+                                                icon = <FaCheckCircle className="text-white" />;
+                                                bgColor = 'bg-emerald-500';
+                                                break;
+                                            case 'in-progress':
+                                                icon = <FaExclamationTriangle className="text-white" />;
+                                                bgColor = 'bg-blue-500';
+                                                break;
+                                            case 'assigned':
+                                                icon = <FaUser className="text-white" />;
+                                                bgColor = 'bg-indigo-500';
+                                                break;
+                                            case 'closed':
+                                                icon = <FaCheckCircle className="text-white" />;
+                                                bgColor = 'bg-gray-600';
+                                                break;
+                                            default: // pending
+                                                icon = <FaExclamationTriangle className="text-white" />;
+                                                bgColor = 'bg-amber-500';
+                                        }
+
+                                        return (
+                                            <div key={index} className="relative pl-20 transition-all hover:bg-gray-50 rounded-xl p-4 -ml-4">
+                                                {/* Timeline Dot/Icon */}
+                                                <div className={`absolute left-0 top-4 w-12 h-12 rounded-full flex items-center justify-center shadow-sm z-10 border-4 border-white ${bgColor}`}>
+                                                    {icon}
+                                                </div>
+
+                                                <div className="flex flex-col sm:flex-row sm:justify-between sm:items-start gap-1 mb-2">
+                                                    <div>
+                                                        <h4 className="text-base font-bold text-gray-900 capitalize leading-none mb-1">
+                                                            {history.status.replace('-', ' ')}
+                                                        </h4>
+                                                        <span className="text-xs text-gray-500 font-medium bg-gray-100 px-2 py-0.5 rounded-full inline-block">
+                                                            Updated by: {history.updatedBy || 'System'}
+                                                        </span>
+                                                    </div>
+                                                    <span className="text-xs text-gray-400 font-medium whitespace-nowrap mt-1 sm:mt-0 flex items-center gap-1">
+                                                        <FaCalendarAlt className="text-gray-300" />
+                                                        {new Date(history.timestamp).toLocaleString(undefined, {
+                                                            weekday: 'short',
+                                                            year: 'numeric',
+                                                            month: 'short',
+                                                            day: 'numeric',
+                                                            hour: '2-digit',
+                                                            minute: '2-digit'
+                                                        })}
+                                                    </span>
+                                                </div>
+
+                                                <div className="text-gray-600 text-sm bg-gray-50 p-3 rounded-lg border border-gray-100 italic">
+                                                    "{history.comment}"
+                                                </div>
+                                            </div>
+                                        );
+                                    })}
+                                </div>
                             </div>
-                        </div>
-                    )}
+                        ) : (
+                            <p className="text-gray-500 italic text-center py-6">No tracking history available.</p>
+                        )}
+                    </div>
                 </div>
             </div>
         </div>
