@@ -100,6 +100,7 @@ const Navbar = () => {
                                         <div className="text-xs text-slate-500 uppercase font-semibold tracking-wider mt-0.5">{user?.role}</div>
                                     </div>
                                     <div className="p-1">
+
                                         <Link
                                             to="/profile"
                                             className="flex items-center gap-3 w-full px-4 py-2.5 text-sm text-slate-700 hover:bg-blue-50 hover:text-blue-700 rounded-lg transition-colors"
@@ -114,6 +115,39 @@ const Navbar = () => {
                                         >
                                             <FaTachometerAlt /> Dashboard
                                         </Link>
+
+                                        {user?.role === 'admin' && (
+                                            <>
+                                                <Link
+                                                    to="/manage-issues"
+                                                    className="flex items-center gap-3 w-full px-4 py-2.5 text-sm text-slate-700 hover:bg-blue-50 hover:text-blue-700 rounded-lg transition-colors"
+                                                    onClick={() => setIsProfileDropdownOpen(false)}
+                                                >
+                                                    <FaList /> Manage Issues
+                                                </Link>
+                                                <Link
+                                                    to="/manage-users"
+                                                    className="flex items-center gap-3 w-full px-4 py-2.5 text-sm text-slate-700 hover:bg-blue-50 hover:text-blue-700 rounded-lg transition-colors"
+                                                    onClick={() => setIsProfileDropdownOpen(false)}
+                                                >
+                                                    <FaUsers /> Manage Users
+                                                </Link>
+                                                <Link
+                                                    to="/manage-staff"
+                                                    className="flex items-center gap-3 w-full px-4 py-2.5 text-sm text-slate-700 hover:bg-blue-50 hover:text-blue-700 rounded-lg transition-colors"
+                                                    onClick={() => setIsProfileDropdownOpen(false)}
+                                                >
+                                                    <FaUserShield /> Manage Staff
+                                                </Link>
+                                                <Link
+                                                    to="/payments"
+                                                    className="flex items-center gap-3 w-full px-4 py-2.5 text-sm text-slate-700 hover:bg-blue-50 hover:text-blue-700 rounded-lg transition-colors"
+                                                    onClick={() => setIsProfileDropdownOpen(false)}
+                                                >
+                                                    <FaMoneyBill /> Payments
+                                                </Link>
+                                            </>
+                                        )}
 
                                         {user?.role === 'staff' && (
                                             <Link
@@ -206,6 +240,22 @@ const Navbar = () => {
                                 <Link to="/dashboard" className="flex items-center gap-3 px-4 py-3 text-slate-700 font-medium hover:bg-slate-50 rounded-xl" onClick={closeMobileMenu}>
                                     <FaTachometerAlt /> Dashboard
                                 </Link>
+                                {user?.role === 'admin' && (
+                                    <>
+                                        <Link to="/manage-issues" className="flex items-center gap-3 px-4 py-3 text-slate-700 font-medium hover:bg-slate-50 rounded-xl" onClick={closeMobileMenu}>
+                                            <FaList /> Manage Issues
+                                        </Link>
+                                        <Link to="/manage-users" className="flex items-center gap-3 px-4 py-3 text-slate-700 font-medium hover:bg-slate-50 rounded-xl" onClick={closeMobileMenu}>
+                                            <FaUsers /> Manage Users
+                                        </Link>
+                                        <Link to="/manage-staff" className="flex items-center gap-3 px-4 py-3 text-slate-700 font-medium hover:bg-slate-50 rounded-xl" onClick={closeMobileMenu}>
+                                            <FaUserShield /> Manage Staff
+                                        </Link>
+                                        <Link to="/payments" className="flex items-center gap-3 px-4 py-3 text-slate-700 font-medium hover:bg-slate-50 rounded-xl" onClick={closeMobileMenu}>
+                                            <FaMoneyBill /> Payments
+                                        </Link>
+                                    </>
+                                )}
                                 {user?.role === 'staff' && (
                                     <Link to="/assigned-issues" className="flex items-center gap-3 px-4 py-3 text-slate-700 font-medium hover:bg-slate-50 rounded-xl" onClick={closeMobileMenu}>
                                         <FaList /> Assigned Issues

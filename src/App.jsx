@@ -11,6 +11,10 @@ import Profile from './pages/Profile';
 import MyIssues from './pages/MyIssues';
 import AssignedIssues from './pages/AssignedIssues';
 import AllIssues from './pages/AllIssues';
+import ManageIssues from './pages/ManageIssues';
+import ManageUsers from './pages/ManageUsers';
+import ManageStaff from './pages/ManageStaff';
+import Payments from './pages/Payments';
 import IssueDetails from './pages/IssueDetails';
 import NotFound from './pages/NotFound';
 
@@ -91,6 +95,40 @@ function AppContent() {
               element={
                 <ProtectedRoute allowedRoles={['citizen']}>
                   <MyIssues />
+                </ProtectedRoute>
+              }
+            />
+
+            {/* Admin Routes */}
+            <Route
+              path="/manage-issues"
+              element={
+                <ProtectedRoute allowedRoles={['admin']}>
+                  <ManageIssues />
+                </ProtectedRoute>
+              }
+            />
+            <Route
+              path="/manage-users"
+              element={
+                <ProtectedRoute allowedRoles={['admin']}>
+                  <ManageUsers />
+                </ProtectedRoute>
+              }
+            />
+            <Route
+              path="/manage-staff"
+              element={
+                <ProtectedRoute allowedRoles={['admin']}>
+                  <ManageStaff />
+                </ProtectedRoute>
+              }
+            />
+            <Route
+              path="/payments"
+              element={
+                <ProtectedRoute allowedRoles={['admin']}>
+                  <Payments />
                 </ProtectedRoute>
               }
             />

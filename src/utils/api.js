@@ -50,7 +50,8 @@ export const issueAPI = {
     createIssue: (data) => api.post('/issues', data),
     getAllIssues: (params) => api.get('/issues', { params }),
     getIssueById: (id) => api.get(`/issues/${id}`),
-    assignIssue: (id, staffId) => api.patch(`/issues/${id}/assign`, { staffId }),
+    assignIssue: (id, staffId) => api.put(`/issues/${id}/assign`, { staffId }), // Updated from PATCH to PUT
+    rejectIssue: (id) => api.put(`/issues/${id}/reject`),
     updateStatus: (id, status, comment) => api.patch(`/issues/${id}/status`, { status, comment }),
     addComment: (id, comment) => api.post(`/issues/${id}/comments`, { comment }),
     deleteIssue: (id) => api.delete(`/issues/${id}`),
@@ -63,6 +64,9 @@ export const userAPI = {
     updateProfile: (data) => api.patch('/auth/profile', data),
     subscribe: (amount) => api.post('/payment/subscribe', { amount }),
     updateUser: (id, data) => api.patch(`/users/${id}`, data),
+    blockUser: (id, isBlocked) => api.patch(`/users/${id}/block`, { isBlocked }),
+    deleteUser: (id) => api.delete(`/users/${id}`),
+    getPayments: () => api.get('/payments'), // Adding this for Payments page
 };
 
 // Stats APIs
