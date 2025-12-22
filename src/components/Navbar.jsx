@@ -1,11 +1,21 @@
-import React from 'react';
+import React, { useContext } from 'react';
 import { Link, NavLink } from 'react-router-dom';
+import { AuthContext } from '../provider/AuthProvider';
 
 const Navbar = () => {
+    const { user, logOut } = useContext(AuthContext);
+
+    const handleLogOut = () => {
+        logOut()
+            .then(() => console.log("Logged out successfully"))
+            .catch(error => console.error(error));
+    };
+
     const navOptions = <>
         <li><NavLink to="/" className={({ isActive }) => isActive ? "text-primary font-bold" : "font-medium"}>Home</NavLink></li>
-        <li><NavLink to="/report" className={({ isActive }) => isActive ? "text-primary font-bold" : "font-medium"}>Report Issue</NavLink></li>
-        <li><NavLink to="/dashboard" className={({ isActive }) => isActive ? "text-primary font-bold" : "font-medium"}>Dashboard</NavLink></li>
+        <li><NavLink to="/issues" className={({ isActive }) => isActive ? "text-primary font-bold" : "font-medium"}>All Issues</NavLink></li>
+        <li><NavLink to="/about" className={({ isActive }) => isActive ? "text-primary font-bold" : "font-medium"}>About</NavLink></li>
+        <li><NavLink to="/contact" className={({ isActive }) => isActive ? "text-primary font-bold" : "font-medium"}>Contact</NavLink></li>
     </>;
 
     return (
@@ -29,8 +39,30 @@ const Navbar = () => {
                 </ul>
             </div>
             <div className="navbar-end gap-2">
-                <Link to="/login" className="btn btn-sm btn-ghost">Login</Link>
-                <Link to="/register" className="btn btn-sm btn-primary text-white">Get Started</Link>
+                {user ? (
+                    <div className="dropdown dropdown-end">
+                        <div tabIndex={0} role="button" className="btn btn-ghost btn-circle avatar">
+                            <div className="w-10 rounded-full">
+                                <img alt="User Profile" src={user?.photoURL || "https://img.daisyui.com/images/stock/photo-1534528741775-53994a69daeb.webp"} />
+                            </div>
+                        </div>
+                        <ul tabIndex={0} className="menu menu-sm dropdown-content mt-3 z-[1] p-2 shadow bg-base-100 rounded-box w-52">
+                            <li>
+                                <a className="justify-between">
+                                    {user?.displayName || "User"}
+                                    <span className="badge">New</span>
+                                </a>
+                            </li>
+                            <li><Link to="/dashboard">Dashboard</Link></li>
+                            <li><button onClick={handleLogOut}>Logout</button></li>
+                        </ul>
+                    </div>
+                ) : (
+                    <>
+                        <Link to="/login" className="btn btn-sm btn-ghost">Login</Link>
+                        <Link to="/register" className="btn btn-sm btn-primary text-white">Get Started</Link>
+                    </>
+                )}
             </div>
         </div>
     );
