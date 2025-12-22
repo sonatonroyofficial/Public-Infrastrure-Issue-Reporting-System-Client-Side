@@ -60,6 +60,8 @@ export const issueAPI = {
 // User APIs
 export const userAPI = {
     getAllUsers: (params) => api.get('/users', { params }),
+    updateProfile: (data) => api.patch('/auth/profile', data),
+    subscribe: (amount) => api.post('/payment/subscribe', { amount }),
     updateUser: (id, data) => api.patch(`/users/${id}`, data),
 };
 

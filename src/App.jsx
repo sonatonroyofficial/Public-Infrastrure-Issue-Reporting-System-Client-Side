@@ -7,7 +7,9 @@ import Login from './pages/Login';
 import Register from './pages/Register';
 import Dashboard from './pages/Dashboard';
 import ReportIssue from './pages/ReportIssue';
+import Profile from './pages/Profile';
 import MyIssues from './pages/MyIssues';
+import AssignedIssues from './pages/AssignedIssues';
 import AllIssues from './pages/AllIssues';
 import IssueDetails from './pages/IssueDetails';
 import NotFound from './pages/NotFound';
@@ -49,9 +51,18 @@ function AppContent() {
             <Route path="/issues/:id" element={<IssueDetails />} />
 
             <Route
+              path="/profile"
+              element={
+                <ProtectedRoute allowedRoles={['admin', 'staff', 'citizen']}>
+                  <Profile />
+                </ProtectedRoute>
+              }
+            />
+
+            <Route
               path="/dashboard"
               element={
-                <ProtectedRoute allowedRoles={['admin', 'staff']}>
+                <ProtectedRoute allowedRoles={['admin', 'staff', 'citizen']}>
                   <Dashboard />
                 </ProtectedRoute>
               }
@@ -62,6 +73,15 @@ function AppContent() {
               element={
                 <ProtectedRoute allowedRoles={['citizen']}>
                   <ReportIssue />
+                </ProtectedRoute>
+              }
+            />
+
+            <Route
+              path="/assigned-issues"
+              element={
+                <ProtectedRoute allowedRoles={['staff']}>
+                  <AssignedIssues />
                 </ProtectedRoute>
               }
             />

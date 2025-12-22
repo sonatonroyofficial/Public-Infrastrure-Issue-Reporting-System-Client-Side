@@ -1,176 +1,271 @@
 import { useState, useEffect } from 'react';
+import { Link } from 'react-router-dom';
 import { issueAPI } from '../utils/api';
-import { FaEye, FaCommentAlt } from 'react-icons/fa';
+import { useAuth } from '../context/AuthContext';
+import { FaEdit, FaTrash, FaEye, FaFilter, FaExclamationTriangle, FaSearch } from 'react-icons/fa';
 
 const MyIssues = () => {
+    const { user } = useAuth();
     const [issues, setIssues] = useState([]);
     const [loading, setLoading] = useState(true);
-    const [selectedIssue, setSelectedIssue] = useState(null);
+    const [searchTerm, setSearchTerm] = useState('');
+    const [filterStatus, setFilterStatus] = useState('all');
+
+    // Edit Modal State
+    const [isEditModalOpen, setIsEditModalOpen] = useState(false);
+    const [editingIssue, setEditingIssue] = useState(null);
+    const [editFormData, setEditFormData] = useState({
+        title: '',
+        description: '',
+        category: '',
+        location: { address: '' }
+    });
 
     useEffect(() => {
-        loadIssues();
+        fetchMyIssues();
     }, []);
 
-    const loadIssues = async () => {
+    const fetchMyIssues = async () => {
         try {
-            const response = await issueAPI.getAllIssues();
+            const response = await issueAPI.getAllIssues({ citizenId: user.userId });
             setIssues(response.data.issues);
         } catch (error) {
-            console.error('Error loading issues:', error);
+            console.error('Error fetching issues:', error);
         } finally {
             setLoading(false);
         }
     };
 
-    if (loading) {
-        return (
-            <div className="loading-container">
-                <div className="spinner"></div>
-            </div>
-        );
-    }
+    const handleDelete = async (id) => {
+        if (window.confirm('Are you sure you want to delete this issue? This action cannot be undone.')) {
+            try {
+                await issueAPI.deleteIssue(id);
+                setIssues(issues.filter(issue => issue._id !== id));
+                alert('Issue deleted successfully');
+            } catch (error) {
+                alert(error.response?.data?.message || 'Failed to delete issue');
+            }
+        }
+    };
+
+    const openEditModal = (issue) => {
+        setEditingIssue(issue);
+        setEditFormData({
+            title: issue.title,
+            description: issue.description,
+            category: issue.category,
+            location: { address: issue.location.address }
+        });
+        setIsEditModalOpen(true);
+    };
+
+    const handleEditSubmit = async (e) => {
+        e.preventDefault();
+        try {
+            await issueAPI.updateIssue(editingIssue._id, editFormData);
+            setIsEditModalOpen(false);
+            fetchMyIssues(); // Refresh list
+            alert('Issue updated successfully');
+        } catch (error) {
+            alert(error.response?.data?.message || 'Failed to update issue');
+        }
+    };
+
+    const filteredIssues = issues.filter(issue => {
+        const matchesStatus = filterStatus === 'all' || issue.status === filterStatus;
+        const matchesSearch = issue.title.toLowerCase().includes(searchTerm.toLowerCase()) ||
+            issue.description.toLowerCase().includes(searchTerm.toLowerCase());
+        return matchesStatus && matchesSearch;
+    });
+
+    if (loading) return <div className="text-center py-10">Loading...</div>;
 
     return (
-        <div style={{ padding: '2rem', minHeight: 'calc(100vh - 72px)' }}>
-            <div className="container">
-                <h1>My Reported Issues</h1>
-                <p style={{ color: 'var(--gray-600)', marginBottom: '2rem' }}>
-                    Track the status of all your reported issues
-                </p>
-
-                {issues.length === 0 ? (
-                    <div className="card" style={{ textAlign: 'center', padding: '3rem' }}>
-                        <p style={{ fontSize: '1.25rem', color: 'var(--gray-600)' }}>
-                            You haven't reported any issues yet.
-                        </p>
+        <div className="min-h-screen bg-gray-50 py-8 px-4">
+            <div className="max-w-6xl mx-auto">
+                <div className="flex flex-col md:flex-row justify-between items-center mb-8 gap-4">
+                    <div>
+                        <h1 className="text-3xl font-bold text-gray-900">My Issues</h1>
+                        <p className="text-gray-600">Manage and track your reported issues</p>
                     </div>
-                ) : (
-                    <div className="grid grid-3">
-                        {issues.map((issue) => (
-                            <div key={issue._id} className="card">
-                                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'start', marginBottom: '1rem' }}>
-                                    <h3 style={{ fontSize: '1.1rem', marginBottom: '0.5rem' }}>{issue.title}</h3>
-                                    {issue.isPremiumIssue && (
-                                        <span className="badge badge-premium" style={{ fontSize: '0.75rem' }}>Premium</span>
-                                    )}
-                                </div>
+                    <Link to="/report-issue" className="bg-blue-600 text-white px-6 py-2 rounded-lg hover:bg-blue-700 font-medium shadow-sm transition-colors">
+                        + Report New Issue
+                    </Link>
+                </div>
 
-                                <div style={{ marginBottom: '0.75rem' }}>
-                                    <span className="badge badge-normal">{issue.category}</span>
-                                    <span className={`badge badge-${issue.status}`} style={{ marginLeft: '0.5rem' }}>
-                                        {issue.status}
-                                    </span>
-                                    <span className={`badge badge-${issue.priority}`} style={{ marginLeft: '0.5rem' }}>
-                                        {issue.priority}
-                                    </span>
-                                </div>
+                {/* Filters */}
+                <div className="bg-white p-4 rounded-xl shadow-sm border border-gray-100 mb-6 flex flex-col md:flex-row gap-4 items-center justify-between">
+                    <div className="relative w-full md:w-96">
+                        <FaSearch className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400" />
+                        <input
+                            type="text"
+                            placeholder="Search your issues..."
+                            className="w-full pl-10 pr-4 py-2 border border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
+                            value={searchTerm}
+                            onChange={(e) => setSearchTerm(e.target.value)}
+                        />
+                    </div>
+                    <div className="relative w-full md:w-48">
+                        <FaFilter className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400" />
+                        <select
+                            className="w-full pl-10 pr-8 py-2 border border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 appearance-none bg-white"
+                            value={filterStatus}
+                            onChange={(e) => setFilterStatus(e.target.value)}
+                        >
+                            <option value="all">All Status</option>
+                            <option value="pending">Pending</option>
+                            <option value="in-progress">In Progress</option>
+                            <option value="resolved">Resolved</option>
+                            <option value="closed">Closed</option>
+                        </select>
+                    </div>
+                </div>
 
-                                <p style={{ color: 'var(--gray-600)', fontSize: '0.95rem', marginBottom: '0.75rem' }}>
-                                    {issue.description.substring(0, 100)}...
-                                </p>
-
-                                <div style={{ fontSize: '0.875rem', color: 'var(--gray-500)', marginBottom: '1rem' }}>
-                                    <div>📍 {issue.location.address}</div>
-                                    <div>📅 {new Date(issue.createdAt).toLocaleDateString()}</div>
-                                    {issue.assignedStaffName && (
-                                        <div>👤 Assigned to: {issue.assignedStaffName}</div>
-                                    )}
-                                </div>
-
-                                {issue.photos && issue.photos.length > 0 && (
-                                    <div style={{ display: 'flex', gap: '0.5rem', marginBottom: '1rem', flexWrap: 'wrap' }}>
-                                        {issue.photos.slice(0, 3).map((photo, index) => (
-                                            <img
-                                                key={index}
-                                                src={photo}
-                                                alt={`Issue ${index + 1}`}
-                                                style={{ width: '60px', height: '60px', objectFit: 'cover', borderRadius: '6px' }}
-                                            />
-                                        ))}
+                {/* Issues List */}
+                <div className="space-y-4">
+                    {filteredIssues.length > 0 ? (
+                        filteredIssues.map(issue => (
+                            <div key={issue._id} className="bg-white p-6 rounded-xl shadow-sm border border-gray-100 hover:shadow-md transition-shadow">
+                                <div className="flex flex-col md:flex-row justify-between gap-6">
+                                    <div className="flex gap-4">
+                                        <div className="hidden sm:block h-24 w-24 flex-shrink-0">
+                                            {issue.photos && issue.photos.length > 0 ? (
+                                                <img src={issue.photos[0]} alt="" className="h-full w-full object-cover rounded-lg border border-gray-100" />
+                                            ) : (
+                                                <div className="h-full w-full bg-gray-100 rounded-lg flex items-center justify-center text-gray-400 text-2xl">
+                                                    <FaExclamationTriangle />
+                                                </div>
+                                            )}
+                                        </div>
+                                        <div>
+                                            <div className="flex flex-wrap items-center gap-2 mb-2">
+                                                <span className={`px-2.5 py-0.5 rounded-full text-xs font-bold uppercase tracking-wide border
+                                                    ${issue.status === 'pending' ? 'bg-amber-100 text-amber-800 border-amber-200' :
+                                                        issue.status === 'resolved' ? 'bg-emerald-100 text-emerald-800 border-emerald-200' :
+                                                            'bg-blue-100 text-blue-800 border-blue-200'}`}>
+                                                    {issue.status}
+                                                </span>
+                                                <span className="text-gray-400 text-xs">•</span>
+                                                <span className="text-sm text-gray-500 capitalize">{issue.category.replace('_', ' ')}</span>
+                                                <span className="text-gray-400 text-xs">•</span>
+                                                <span className="text-sm text-gray-500">{new Date(issue.createdAt).toLocaleDateString()}</span>
+                                            </div>
+                                            <h3 className="text-xl font-bold text-gray-900 mb-2">{issue.title}</h3>
+                                            <p className="text-gray-600 line-clamp-2">{issue.description}</p>
+                                        </div>
                                     </div>
-                                )}
 
+                                    <div className="flex flex-row md:flex-col justify-center gap-2 border-t md:border-t-0 md:border-l border-gray-100 pt-4 md:pt-0 md:pl-6 md:w-48">
+                                        <Link to={`/issues/${issue._id}`} className="flex-1 px-4 py-2 text-center text-sm font-medium text-blue-600 bg-blue-50 rounded-lg hover:bg-blue-100 transition-colors">
+                                            View Details
+                                        </Link>
+                                        {issue.status === 'pending' && (
+                                            <>
+                                                <button
+                                                    onClick={() => openEditModal(issue)}
+                                                    className="flex-1 px-4 py-2 text-center text-sm font-medium text-gray-700 bg-gray-100 rounded-lg hover:bg-gray-200 transition-colors flex items-center justify-center gap-2"
+                                                >
+                                                    <FaEdit /> Edit
+                                                </button>
+                                                <button
+                                                    onClick={() => handleDelete(issue._id)}
+                                                    className="flex-1 px-4 py-2 text-center text-sm font-medium text-red-600 bg-red-50 rounded-lg hover:bg-red-100 transition-colors flex items-center justify-center gap-2"
+                                                >
+                                                    <FaTrash /> Delete
+                                                </button>
+                                            </>
+                                        )}
+                                    </div>
+                                </div>
+                            </div>
+                        ))
+                    ) : (
+                        <div className="text-center py-16 bg-white rounded-xl border border-dashed border-gray-300">
+                            <FaExclamationTriangle className="mx-auto text-4xl text-gray-300 mb-4" />
+                            <h3 className="text-lg font-medium text-gray-900 mb-1">No issues find</h3>
+                            <p className="text-gray-500 mb-6">You haven't reported any issues matching your criteria.</p>
+                            <Link to="/report-issue" className="text-blue-600 hover:text-blue-700 font-medium">
+                                Report an Issue &rarr;
+                            </Link>
+                        </div>
+                    )}
+                </div>
+            </div>
+
+            {/* Edit Modal */}
+            {isEditModalOpen && (
+                <div className="fixed inset-0 bg-black/50 backdrop-blur-sm flex items-center justify-center p-4 z-50">
+                    <div className="bg-white rounded-2xl shadow-xl w-full max-w-2xl p-8 max-h-[90vh] overflow-y-auto">
+                        <h2 className="text-2xl font-bold mb-6">Edit Issue</h2>
+                        <form onSubmit={handleEditSubmit} className="space-y-6">
+                            <div>
+                                <label className="block text-sm font-bold text-gray-700 mb-2">Title</label>
+                                <input
+                                    type="text"
+                                    required
+                                    className="w-full px-4 py-3 rounded-lg border border-gray-300 focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+                                    value={editFormData.title}
+                                    onChange={(e) => setEditFormData({ ...editFormData, title: e.target.value })}
+                                />
+                            </div>
+
+                            <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                                <div>
+                                    <label className="block text-sm font-bold text-gray-700 mb-2">Category</label>
+                                    <select
+                                        className="w-full px-4 py-3 rounded-lg border border-gray-300 focus:ring-2 focus:ring-blue-500 focus:border-blue-500 bg-white"
+                                        value={editFormData.category}
+                                        onChange={(e) => setEditFormData({ ...editFormData, category: e.target.value })}
+                                    >
+                                        <option value="pothole">Pothole</option>
+                                        <option value="streetlight">Streetlight</option>
+                                        <option value="water_leakage">Water Leakage</option>
+                                        <option value="garbage">Garbage</option>
+                                        <option value="footpath">Footpath</option>
+                                        <option value="other">Other</option>
+                                    </select>
+                                </div>
+                                <div>
+                                    <label className="block text-sm font-bold text-gray-700 mb-2">Location Address</label>
+                                    <input
+                                        type="text"
+                                        required
+                                        className="w-full px-4 py-3 rounded-lg border border-gray-300 focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+                                        value={editFormData.location.address}
+                                        onChange={(e) => setEditFormData({ ...editFormData, location: { ...editFormData.location, address: e.target.value } })}
+                                    />
+                                </div>
+                            </div>
+
+                            <div>
+                                <label className="block text-sm font-bold text-gray-700 mb-2">Description</label>
+                                <textarea
+                                    className="w-full px-4 py-3 rounded-lg border border-gray-300 focus:ring-2 focus:ring-blue-500 focus:border-blue-500 h-32"
+                                    required
+                                    value={editFormData.description}
+                                    onChange={(e) => setEditFormData({ ...editFormData, description: e.target.value })}
+                                ></textarea>
+                            </div>
+
+                            <div className="flex justify-end gap-3 pt-4 border-t border-gray-100">
                                 <button
-                                    onClick={() => setSelectedIssue(issue)}
-                                    className="btn btn-outline btn-sm w-full"
+                                    type="button"
+                                    onClick={() => setIsEditModalOpen(false)}
+                                    className="px-6 py-2.5 rounded-lg border border-gray-300 text-gray-700 hover:bg-gray-50 font-medium"
                                 >
-                                    <FaEye /> View Details
+                                    Cancel
+                                </button>
+                                <button
+                                    type="submit"
+                                    className="px-6 py-2.5 rounded-lg bg-blue-600 text-white hover:bg-blue-700 font-medium shadow-lg shadow-blue-200"
+                                >
+                                    Save Changes
                                 </button>
                             </div>
-                        ))}
+                        </form>
                     </div>
-                )}
-
-                {/* Issue Details Modal */}
-                {selectedIssue && (
-                    <div className="modal-overlay" onClick={() => setSelectedIssue(null)}>
-                        <div className="modal" onClick={(e) => e.stopPropagation()} style={{ padding: '2rem' }}>
-                            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'start', marginBottom: '1rem' }}>
-                                <h2>{selectedIssue.title}</h2>
-                                <button onClick={() => setSelectedIssue(null)} className="btn btn-ghost">✕</button>
-                            </div>
-
-                            <div style={{ marginBottom: '1rem' }}>
-                                <span className="badge badge-normal">{selectedIssue.category}</span>
-                                <span className={`badge badge-${selectedIssue.status}`} style={{ marginLeft: '0.5rem' }}>
-                                    {selectedIssue.status}
-                                </span>
-                                <span className={`badge badge-${selectedIssue.priority}`} style={{ marginLeft: '0.5rem' }}>
-                                    {selectedIssue.priority}
-                                </span>
-                            </div>
-
-                            <p style={{ marginBottom: '1rem', lineHeight: '1.6' }}>{selectedIssue.description}</p>
-
-                            <div style={{ marginBottom: '1rem', padding: '1rem', background: 'var(--gray-50)', borderRadius: '8px' }}>
-                                <h4 style={{ marginBottom: '0.5rem' }}>Location</h4>
-                                <p>{selectedIssue.location.address}</p>
-                                {selectedIssue.location.latitude && selectedIssue.location.longitude && (
-                                    <p style={{ fontSize: '0.875rem', color: 'var(--gray-600)' }}>
-                                        Coordinates: {selectedIssue.location.latitude}, {selectedIssue.location.longitude}
-                                    </p>
-                                )}
-                            </div>
-
-                            {selectedIssue.photos && selectedIssue.photos.length > 0 && (
-                                <div style={{ marginBottom: '1rem' }}>
-                                    <h4 style={{ marginBottom: '0.5rem' }}>Photos</h4>
-                                    <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(150px, 1fr))', gap: '0.5rem' }}>
-                                        {selectedIssue.photos.map((photo, index) => (
-                                            <img
-                                                key={index}
-                                                src={photo}
-                                                alt={`Issue ${index + 1}`}
-                                                style={{ width: '100%', height: '150px', objectFit: 'cover', borderRadius: '8px' }}
-                                            />
-                                        ))}
-                                    </div>
-                                </div>
-                            )}
-
-                            {selectedIssue.statusHistory && selectedIssue.statusHistory.length > 0 && (
-                                <div>
-                                    <h4 style={{ marginBottom: '0.5rem' }}>Status History</h4>
-                                    <div style={{ maxHeight: '200px', overflowY: 'auto' }}>
-                                        {selectedIssue.statusHistory.map((history, index) => (
-                                            <div key={index} style={{ padding: '0.75rem', background: 'var(--gray-50)', borderRadius: '6px', marginBottom: '0.5rem' }}>
-                                                <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '0.25rem' }}>
-                                                    <span className={`badge badge-${history.status}`}>{history.status}</span>
-                                                    <span style={{ fontSize: '0.875rem', color: 'var(--gray-600)' }}>
-                                                        {new Date(history.timestamp).toLocaleString()}
-                                                    </span>
-                                                </div>
-                                                <p style={{ fontSize: '0.875rem', color: 'var(--gray-700)' }}>{history.comment}</p>
-                                                <p style={{ fontSize: '0.75rem', color: 'var(--gray-500)' }}>by {history.updatedBy}</p>
-                                            </div>
-                                        ))}
-                                    </div>
-                                </div>
-                            )}
-                        </div>
-                    </div>
-                )}
-            </div>
+                </div>
+            )}
         </div>
     );
 };

@@ -245,6 +245,16 @@ const IssueDetails = () => {
                                                 bgColor = 'bg-gray-600';
                                                 badgeColor = 'bg-gray-100 text-gray-800 border-gray-200';
                                                 break;
+                                            case 'rejected':
+                                                icon = <FaExclamationTriangle className="text-white text-lg" />;
+                                                bgColor = 'bg-red-600';
+                                                badgeColor = 'bg-red-100 text-red-800 border-red-200';
+                                                break;
+                                            case 'boosted':
+                                                icon = <FaThumbsUp className="text-white text-lg" />;
+                                                bgColor = 'bg-purple-600';
+                                                badgeColor = 'bg-purple-100 text-purple-800 border-purple-200';
+                                                break;
                                             default: // pending
                                                 icon = <FaExclamationTriangle className="text-white text-lg" />;
                                                 bgColor = 'bg-amber-500';

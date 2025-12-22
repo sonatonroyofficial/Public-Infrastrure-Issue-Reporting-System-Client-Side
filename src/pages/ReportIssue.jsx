@@ -1,218 +1,180 @@
 import { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { issueAPI } from '../utils/api';
-import { FaCamera, FaMapMarkerAlt, FaPaperPlane } from 'react-icons/fa';
+import { FaCloudUploadAlt, FaMapMarkerAlt, FaExclamationCircle } from 'react-icons/fa';
 
 const ReportIssue = () => {
     const navigate = useNavigate();
+    const [loading, setLoading] = useState(false);
+    const [error, setError] = useState('');
     const [formData, setFormData] = useState({
         title: '',
         description: '',
         category: 'pothole',
-        location: {
-            address: '',
-            latitude: '',
-            longitude: ''
-        },
+        location: { address: '', latitude: 0, longitude: 0 },
         photos: []
     });
-    const [isLoading, setIsLoading] = useState(false);
-    const [error, setError] = useState('');
 
-    const categories = [
-        { value: 'pothole', label: 'Pothole' },
-        { value: 'streetlight', label: 'Broken Streetlight' },
-        { value: 'water_leakage', label: 'Water Leakage' },
-        { value: 'garbage', label: 'Garbage Overflow' },
-        { value: 'footpath', label: 'Damaged Footpath' },
-        { value: 'other', label: 'Other' }
-    ];
-
-    const handleChange = (e) => {
-        const { name, value } = e.target;
-        if (name.startsWith('location.')) {
-            const field = name.split('.')[1];
-            setFormData({
-                ...formData,
-                location: { ...formData.location, [field]: value }
-            });
-        } else {
-            setFormData({ ...formData, [name]: value });
+    const handleFileChange = (e) => {
+        const file = e.target.files[0];
+        if (file) {
+            const reader = new FileReader();
+            reader.onloadend = () => {
+                setFormData(prev => ({
+                    ...prev,
+                    photos: [reader.result] // Store base64 string
+                }));
+            };
+            reader.readAsDataURL(file);
         }
-    };
-
-    const handleImageUpload = (e) => {
-        const files = Array.from(e.target.files);
-        const maxFiles = 3;
-
-        if (files.length > maxFiles) {
-            setError(`Maximum ${maxFiles} images allowed`);
-            return;
-        }
-
-        const promises = files.map(file => {
-            return new Promise((resolve, reject) => {
-                const reader = new FileReader();
-                reader.onloadend = () => resolve(reader.result);
-                reader.onerror = reject;
-                reader.readAsDataURL(file);
-            });
-        });
-
-        Promise.all(promises)
-            .then(base64Images => {
-                setFormData({ ...formData, photos: base64Images });
-                setError('');
-            })
-            .catch(() => setError('Error uploading images'));
     };
 
     const handleSubmit = async (e) => {
         e.preventDefault();
+        setLoading(true);
         setError('');
-        setIsLoading(true);
 
         try {
             await issueAPI.createIssue(formData);
             alert('Issue reported successfully!');
             navigate('/my-issues');
         } catch (err) {
-            setError(err.response?.data?.message || 'Failed to report issue');
+            console.error('Report error:', err);
+            const message = err.response?.data?.message || 'Failed to report issue';
+            setError(message);
+
+            // Handle Upgrade Requirement
+            if (err.response?.data?.requiresUpgrade) {
+                if (window.confirm(`${message}\n\nWould you like to upgrade to Premium?`)) {
+                    navigate('/profile');
+                }
+            }
         } finally {
-            setIsLoading(false);
+            setLoading(false);
         }
     };
 
     return (
-        <div style={{ padding: '2rem', minHeight: 'calc(100vh - 72px)' }}>
-            <div className="container" style={{ maxWidth: '800px' }}>
-                <div className="card">
-                    <h1 style={{ marginBottom: '0.5rem' }}>Report an Issue</h1>
-                    <p style={{ color: 'var(--gray-600)', marginBottom: '2rem' }}>
-                        Help us improve your community by reporting infrastructure issues
-                    </p>
-
-                    {error && <div className="alert alert-error">{error}</div>}
-
-                    <form onSubmit={handleSubmit}>
-                        <div className="form-group">
-                            <label className="form-label">Issue Title *</label>
-                            <input
-                                type="text"
-                                name="title"
-                                value={formData.title}
-                                onChange={handleChange}
-                                className="form-input"
-                                placeholder="Brief description of the issue"
-                                required
-                            />
-                        </div>
-
-                        <div className="form-group">
-                            <label className="form-label">Category *</label>
-                            <select
-                                name="category"
-                                value={formData.category}
-                                onChange={handleChange}
-                                className="form-select"
-                                required
-                            >
-                                {categories.map(cat => (
-                                    <option key={cat.value} value={cat.value}>{cat.label}</option>
-                                ))}
-                            </select>
-                        </div>
-
-                        <div className="form-group">
-                            <label className="form-label">Description *</label>
-                            <textarea
-                                name="description"
-                                value={formData.description}
-                                onChange={handleChange}
-                                className="form-textarea"
-                                placeholder="Provide detailed information about the issue..."
-                                required
-                            />
-                        </div>
-
-                        <div className="form-group">
-                            <label className="form-label">
-                                <FaMapMarkerAlt /> Location Address *
-                            </label>
-                            <input
-                                type="text"
-                                name="location.address"
-                                value={formData.location.address}
-                                onChange={handleChange}
-                                className="form-input"
-                                placeholder="Street address or landmark"
-                                required
-                            />
-                        </div>
-
-                        <div className="form-row">
-                            <div className="form-group">
-                                <label className="form-label">Latitude (Optional)</label>
-                                <input
-                                    type="number"
-                                    step="any"
-                                    name="location.latitude"
-                                    value={formData.location.latitude}
-                                    onChange={handleChange}
-                                    className="form-input"
-                                    placeholder="23.8103"
-                                />
-                            </div>
-                            <div className="form-group">
-                                <label className="form-label">Longitude (Optional)</label>
-                                <input
-                                    type="number"
-                                    step="any"
-                                    name="location.longitude"
-                                    value={formData.location.longitude}
-                                    onChange={handleChange}
-                                    className="form-input"
-                                    placeholder="90.4125"
-                                />
-                            </div>
-                        </div>
-
-                        <div className="form-group">
-                            <label className="form-label">
-                                <FaCamera /> Upload Photos (Max 3)
-                            </label>
-                            <input
-                                type="file"
-                                accept="image/*"
-                                multiple
-                                onChange={handleImageUpload}
-                                className="form-input"
-                            />
-                            {formData.photos.length > 0 && (
-                                <div style={{ display: 'flex', gap: '0.5rem', marginTop: '0.5rem', flexWrap: 'wrap' }}>
-                                    {formData.photos.map((photo, index) => (
-                                        <img
-                                            key={index}
-                                            src={photo}
-                                            alt={`Preview ${index + 1}`}
-                                            style={{ width: '100px', height: '100px', objectFit: 'cover', borderRadius: '8px' }}
-                                        />
-                                    ))}
-                                </div>
-                            )}
-                        </div>
-
-                        <button type="submit" className="btn btn-primary btn-lg w-full" disabled={isLoading}>
-                            {isLoading ? (
-                                <div className="spinner" style={{ width: '20px', height: '20px', borderWidth: '2px' }}></div>
-                            ) : (
-                                <>
-                                    <FaPaperPlane /> Submit Report
-                                </>
-                            )}
-                        </button>
-                    </form>
+        <div className="min-h-screen bg-gray-50 py-12 px-4">
+            <div className="max-w-3xl mx-auto bg-white rounded-2xl shadow-xl overflow-hidden border border-gray-100">
+                <div className="bg-blue-600 px-8 py-6">
+                    <h1 className="text-3xl font-bold text-white mb-2">Report an Issue</h1>
+                    <p className="text-blue-100">Help us improve your community by reporting infrastructure problems.</p>
                 </div>
+
+                <form onSubmit={handleSubmit} className="p-8 space-y-8">
+                    {error && (
+                        <div className="bg-red-50 text-red-700 p-4 rounded-xl flex items-start gap-3 border border-red-100">
+                            <FaExclamationCircle className="mt-1 flex-shrink-0" />
+                            <div>
+                                <p className="font-bold">Submission Failed</p>
+                                <p className="text-sm">{error}</p>
+                            </div>
+                        </div>
+                    )}
+
+                    <div className="space-y-6">
+                        <div>
+                            <label className="block text-sm font-bold text-gray-700 mb-2">Issue Title</label>
+                            <input
+                                type="text"
+                                placeholder="e.g., Deep Pothole on Main Street"
+                                required
+                                className="w-full px-4 py-3 rounded-lg border border-gray-300 focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-colors"
+                                value={formData.title}
+                                onChange={(e) => setFormData({ ...formData, title: e.target.value })}
+                            />
+                        </div>
+
+                        <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                            <div>
+                                <label className="block text-sm font-bold text-gray-700 mb-2">Category</label>
+                                <select
+                                    className="w-full px-4 py-3 rounded-lg border border-gray-300 focus:ring-2 focus:ring-blue-500 focus:border-blue-500 bg-white"
+                                    value={formData.category}
+                                    onChange={(e) => setFormData({ ...formData, category: e.target.value })}
+                                >
+                                    <option value="pothole">Pothole</option>
+                                    <option value="streetlight">Broken Streetlight</option>
+                                    <option value="water_leakage">Water Leakage</option>
+                                    <option value="garbage">Garbage Pile</option>
+                                    <option value="footpath">Damaged Footpath</option>
+                                    <option value="other">Other</option>
+                                </select>
+                            </div>
+
+                            <div>
+                                <label className="block text-sm font-bold text-gray-700 mb-2">Location Address</label>
+                                <div className="relative">
+                                    <FaMapMarkerAlt className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400" />
+                                    <input
+                                        type="text"
+                                        placeholder="e.g., 123 Main St, Near Central Park"
+                                        required
+                                        className="w-full pl-10 pr-4 py-3 rounded-lg border border-gray-300 focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+                                        value={formData.location.address}
+                                        onChange={(e) => setFormData({
+                                            ...formData,
+                                            location: { ...formData.location, address: e.target.value }
+                                        })}
+                                    />
+                                </div>
+                            </div>
+                        </div>
+
+                        <div>
+                            <label className="block text-sm font-bold text-gray-700 mb-2">Description</label>
+                            <textarea
+                                placeholder="Please describe the issue in detail..."
+                                required
+                                className="w-full px-4 py-3 rounded-lg border border-gray-300 focus:ring-2 focus:ring-blue-500 focus:border-blue-500 h-32 resize-none"
+                                value={formData.description}
+                                onChange={(e) => setFormData({ ...formData, description: e.target.value })}
+                            ></textarea>
+                        </div>
+
+                        <div>
+                            <label className="block text-sm font-bold text-gray-700 mb-2">Upload Photo</label>
+                            <div className="border-2 border-dashed border-gray-300 rounded-xl p-8 hover:bg-gray-50 transition-colors text-center cursor-pointer relative">
+                                <input
+                                    type="file"
+                                    className="absolute inset-0 w-full h-full opacity-0 cursor-pointer"
+                                    accept="image/*"
+                                    onChange={handleFileChange}
+                                />
+                                {formData.photos.length > 0 ? (
+                                    <div className="flex flex-col items-center">
+                                        <img src={formData.photos[0]} alt="Preview" className="h-32 object-cover rounded-lg mb-2 shadow-sm" />
+                                        <span className="text-sm text-green-600 font-medium">Photo selected (Click to change)</span>
+                                    </div>
+                                ) : (
+                                    <div className="flex flex-col items-center text-gray-500">
+                                        <FaCloudUploadAlt className="text-4xl mb-2 text-gray-400" />
+                                        <span className="font-medium">Click to upload photo</span>
+                                        <span className="text-xs text-gray-400 mt-1">JPG, PNG up to 5MB</span>
+                                    </div>
+                                )}
+                            </div>
+                        </div>
+                    </div>
+
+                    <div className="flex items-center justify-end gap-4 pt-4 border-t border-gray-100">
+                        <button
+                            type="button"
+                            onClick={() => navigate('/my-issues')}
+                            className="px-6 py-3 rounded-lg border border-gray-300 text-gray-700 font-bold hover:bg-gray-50 transition-colors"
+                        >
+                            Cancel
+                        </button>
+                        <button
+                            type="submit"
+                            disabled={loading}
+                            className={`px-8 py-3 rounded-lg bg-blue-600 text-white font-bold shadow-lg shadow-blue-200 hover:bg-blue-700 transition-all transform hover:-translate-y-1 ${loading ? 'opacity-50 cursor-not-allowed' : ''}`}
+                        >
+                            {loading ? 'Submitting...' : 'Submit Issue'}
+                        </button>
+                    </div>
+                </form>
             </div>
         </div>
     );

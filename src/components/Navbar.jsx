@@ -12,7 +12,8 @@ import {
     FaList,
     FaInfoCircle,
     FaEnvelope,
-    FaCaretDown
+    FaCaretDown,
+    FaPlusCircle
 } from 'react-icons/fa';
 
 const Navbar = () => {
@@ -100,12 +101,51 @@ const Navbar = () => {
                                     </div>
                                     <div className="p-1">
                                         <Link
-                                            to={user?.role === 'citizen' ? '/my-issues' : '/dashboard'}
+                                            to="/profile"
+                                            className="flex items-center gap-3 w-full px-4 py-2.5 text-sm text-slate-700 hover:bg-blue-50 hover:text-blue-700 rounded-lg transition-colors"
+                                            onClick={() => setIsProfileDropdownOpen(false)}
+                                        >
+                                            <FaUserCircle /> Profile
+                                        </Link>
+                                        <Link
+                                            to="/dashboard"
                                             className="flex items-center gap-3 w-full px-4 py-2.5 text-sm text-slate-700 hover:bg-blue-50 hover:text-blue-700 rounded-lg transition-colors"
                                             onClick={() => setIsProfileDropdownOpen(false)}
                                         >
                                             <FaTachometerAlt /> Dashboard
                                         </Link>
+
+                                        {user?.role === 'staff' && (
+                                            <Link
+                                                to="/assigned-issues"
+                                                className="flex items-center gap-3 w-full px-4 py-2.5 text-sm text-slate-700 hover:bg-blue-50 hover:text-blue-700 rounded-lg transition-colors"
+                                                onClick={() => setIsProfileDropdownOpen(false)}
+                                            >
+                                                <FaList /> Assigned Issues
+                                            </Link>
+                                        )}
+
+                                        {user?.role === 'citizen' && (
+                                            <>
+                                                <Link
+                                                    to="/my-issues"
+                                                    className="flex items-center gap-3 w-full px-4 py-2.5 text-sm text-slate-700 hover:bg-blue-50 hover:text-blue-700 rounded-lg transition-colors"
+                                                    onClick={() => setIsProfileDropdownOpen(false)}
+                                                >
+                                                    <FaList /> My Issues
+                                                </Link>
+                                                <Link
+                                                    to="/report-issue"
+                                                    className="flex items-center gap-3 w-full px-4 py-2.5 text-sm text-slate-700 hover:bg-blue-50 hover:text-blue-700 rounded-lg transition-colors"
+                                                    onClick={() => setIsProfileDropdownOpen(false)}
+                                                >
+                                                    <FaPlusCircle /> Report Issue
+                                                </Link>
+                                            </>
+                                        )}
+
+                                        <div className="my-1 border-t border-slate-100"></div>
+
                                         <button
                                             onClick={handleLogout}
                                             className="flex items-center gap-3 w-full px-4 py-2.5 text-sm text-red-600 hover:bg-red-50 hover:text-red-700 rounded-lg transition-colors text-left"
@@ -160,9 +200,27 @@ const Navbar = () => {
                                 <div className="px-4 py-2 text-sm text-slate-500 font-semibold uppercase tracking-wider">
                                     Signed in as {user?.name}
                                 </div>
-                                <Link to={user?.role === 'citizen' ? '/my-issues' : '/dashboard'} className="flex items-center gap-3 px-4 py-3 text-slate-700 font-medium hover:bg-slate-50 rounded-xl" onClick={closeMobileMenu}>
+                                <Link to="/profile" className="flex items-center gap-3 px-4 py-3 text-slate-700 font-medium hover:bg-slate-50 rounded-xl" onClick={closeMobileMenu}>
+                                    <FaUserCircle /> Profile
+                                </Link>
+                                <Link to="/dashboard" className="flex items-center gap-3 px-4 py-3 text-slate-700 font-medium hover:bg-slate-50 rounded-xl" onClick={closeMobileMenu}>
                                     <FaTachometerAlt /> Dashboard
                                 </Link>
+                                {user?.role === 'staff' && (
+                                    <Link to="/assigned-issues" className="flex items-center gap-3 px-4 py-3 text-slate-700 font-medium hover:bg-slate-50 rounded-xl" onClick={closeMobileMenu}>
+                                        <FaList /> Assigned Issues
+                                    </Link>
+                                )}
+                                {user?.role === 'citizen' && (
+                                    <>
+                                        <Link to="/my-issues" className="flex items-center gap-3 px-4 py-3 text-slate-700 font-medium hover:bg-slate-50 rounded-xl" onClick={closeMobileMenu}>
+                                            <FaList /> My Issues
+                                        </Link>
+                                        <Link to="/report-issue" className="flex items-center gap-3 px-4 py-3 text-slate-700 font-medium hover:bg-slate-50 rounded-xl" onClick={closeMobileMenu}>
+                                            <FaPlusCircle /> Report Issue
+                                        </Link>
+                                    </>
+                                )}
                                 <button onClick={handleLogout} className="flex items-center gap-3 px-4 py-3 text-red-600 font-medium hover:bg-red-50 rounded-xl text-left w-full">
                                     <FaSignOutAlt /> Logout
                                 </button>
