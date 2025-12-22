@@ -1,60 +1,91 @@
 import { Link } from 'react-router-dom';
-import { FaFacebook, FaTwitter, FaInstagram, FaLinkedin, FaGithub } from 'react-icons/fa';
+import { FaFacebook, FaTwitter, FaInstagram, FaLinkedin } from 'react-icons/fa';
 
 const Footer = () => {
     return (
-        <footer className="footer" style={{ background: 'var(--dark-bg)', color: 'var(--dark-text)', paddingTop: '4rem', paddingBottom: '2rem' }}>
-            <div className="container">
-                <div className="grid grid-4" style={{ marginBottom: '3rem' }}>
-                    <div className="footer-col">
-                        <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', marginBottom: '1rem' }}>
-                            <div style={{ fontSize: '1.5rem' }}>🏛️</div>
-                            <h3 style={{ margin: 0, color: '#fff', fontSize: '1.25rem' }}>InfraReport</h3>
+        <footer className="bg-slate-900 pt-16 pb-8 border-t border-slate-800">
+            <div className="container mx-auto px-6">
+                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-12 mb-12">
+                    {/* Brand Column */}
+                    <div>
+                        <div className="flex items-center gap-2 mb-4">
+                            <span className="text-2xl">🏛️</span>
+                            <h3 className="text-xl font-bold text-white">InfraReport</h3>
                         </div>
-                        <p style={{ color: 'var(--dark-text-secondary)', marginBottom: '1.5rem', lineHeight: '1.6' }}>
+                        <p className="text-slate-400 leading-relaxed mb-6">
                             Empowering citizens to build better communities through transparent infrastructure reporting and tracking.
                         </p>
-                        <div style={{ display: 'flex', gap: '1rem' }}>
-                            <a href="#" style={{ color: 'var(--dark-text-secondary)', fontSize: '1.25rem' }}><FaFacebook /></a>
-                            <a href="#" style={{ color: 'var(--dark-text-secondary)', fontSize: '1.25rem' }}><FaTwitter /></a>
-                            <a href="#" style={{ color: 'var(--dark-text-secondary)', fontSize: '1.25rem' }}><FaInstagram /></a>
-                            <a href="#" style={{ color: 'var(--dark-text-secondary)', fontSize: '1.25rem' }}><FaLinkedin /></a>
+                        <div className="flex gap-4">
+                            <a href="#" className="w-10 h-10 rounded-full bg-slate-800 flex items-center justify-center text-slate-400 hover:text-white hover:bg-blue-600 transition-all duration-300">
+                                <FaFacebook size={18} />
+                            </a>
+                            <a href="#" className="w-10 h-10 rounded-full bg-slate-800 flex items-center justify-center text-slate-400 hover:text-white hover:bg-blue-400 transition-all duration-300">
+                                <FaTwitter size={18} />
+                            </a>
+                            <a href="#" className="w-10 h-10 rounded-full bg-slate-800 flex items-center justify-center text-slate-400 hover:text-white hover:bg-pink-600 transition-all duration-300">
+                                <FaInstagram size={18} />
+                            </a>
+                            <a href="#" className="w-10 h-10 rounded-full bg-slate-800 flex items-center justify-center text-slate-400 hover:text-white hover:bg-blue-700 transition-all duration-300">
+                                <FaLinkedin size={18} />
+                            </a>
                         </div>
                     </div>
 
-                    <div className="footer-col">
-                        <h4 style={{ color: '#fff', marginBottom: '1.25rem' }}>Quick Links</h4>
-                        <ul style={{ listStyle: 'none', padding: 0 }}>
-                            <li style={{ marginBottom: '0.75rem' }}><Link to="/" style={{ color: 'var(--dark-text-secondary)', textDecoration: 'none' }}>Home</Link></li>
-                            <li style={{ marginBottom: '0.75rem' }}><Link to="/issues" style={{ color: 'var(--dark-text-secondary)', textDecoration: 'none' }}>All Issues</Link></li>
-                            <li style={{ marginBottom: '0.75rem' }}><Link to="/about" style={{ color: 'var(--dark-text-secondary)', textDecoration: 'none' }}>About Us</Link></li>
-                            <li style={{ marginBottom: '0.75rem' }}><Link to="/contact" style={{ color: 'var(--dark-text-secondary)', textDecoration: 'none' }}>Contact</Link></li>
+                    {/* Quick Links */}
+                    <div>
+                        <h4 className="text-white font-bold text-lg mb-6">Quick Links</h4>
+                        <ul className="space-y-4">
+                            <li>
+                                <Link to="/" className="text-slate-400 hover:text-blue-500 transition-colors inline-block">Home</Link>
+                            </li>
+                            <li>
+                                <Link to="/issues" className="text-slate-400 hover:text-blue-500 transition-colors inline-block">All Issues</Link>
+                            </li>
+                            <li>
+                                <Link to="/about" className="text-slate-400 hover:text-blue-500 transition-colors inline-block">About Us</Link>
+                            </li>
+                            <li>
+                                <Link to="/contact" className="text-slate-400 hover:text-blue-500 transition-colors inline-block">Contact</Link>
+                            </li>
                         </ul>
                     </div>
 
-                    <div className="footer-col">
-                        <h4 style={{ color: '#fff', marginBottom: '1.25rem' }}>Legal</h4>
-                        <ul style={{ listStyle: 'none', padding: 0 }}>
-                            <li style={{ marginBottom: '0.75rem' }}><Link to="/privacy" style={{ color: 'var(--dark-text-secondary)', textDecoration: 'none' }}>Privacy Policy</Link></li>
-                            <li style={{ marginBottom: '0.75rem' }}><Link to="/terms" style={{ color: 'var(--dark-text-secondary)', textDecoration: 'none' }}>Terms of Service</Link></li>
-                            <li style={{ marginBottom: '0.75rem' }}><Link to="/cookies" style={{ color: 'var(--dark-text-secondary)', textDecoration: 'none' }}>Cookie Policy</Link></li>
+                    {/* Legal */}
+                    <div>
+                        <h4 className="text-white font-bold text-lg mb-6">Legal</h4>
+                        <ul className="space-y-4">
+                            <li>
+                                <Link to="/privacy" className="text-slate-400 hover:text-blue-500 transition-colors inline-block">Privacy Policy</Link>
+                            </li>
+                            <li>
+                                <Link to="/terms" className="text-slate-400 hover:text-blue-500 transition-colors inline-block">Terms of Service</Link>
+                            </li>
+                            <li>
+                                <Link to="/cookies" className="text-slate-400 hover:text-blue-500 transition-colors inline-block">Cookie Policy</Link>
+                            </li>
                         </ul>
                     </div>
 
-                    <div className="footer-col">
-                        <h4 style={{ color: '#fff', marginBottom: '1.25rem' }}>Contact Info</h4>
-                        <ul style={{ listStyle: 'none', padding: 0 }}>
-                            <li style={{ marginBottom: '0.75rem', color: 'var(--dark-text-secondary)' }}>123 City Hall Avenue</li>
-                            <li style={{ marginBottom: '0.75rem', color: 'var(--dark-text-secondary)' }}>Metro City, MC 10001</li>
-                            <li style={{ marginBottom: '0.75rem', color: 'var(--dark-text-secondary)' }}>support@infrareport.gov</li>
-                            <li style={{ marginBottom: '0.75rem', color: 'var(--dark-text-secondary)' }}>+1 (555) 123-4567</li>
+                    {/* Contact */}
+                    <div>
+                        <h4 className="text-white font-bold text-lg mb-6">Contact Info</h4>
+                        <ul className="space-y-4 text-slate-400">
+                            <li className="flex items-start gap-3">
+                                <span>123 City Hall Avenue, Metro City, MC 10001</span>
+                            </li>
+                            <li>
+                                <a href="mailto:support@infrareport.gov" className="hover:text-blue-500 transition-colors">support@infrareport.gov</a>
+                            </li>
+                            <li>
+                                <a href="tel:+15551234567" className="hover:text-blue-500 transition-colors">+1 (555) 123-4567</a>
+                            </li>
                         </ul>
                     </div>
                 </div>
 
-                <div style={{ borderTop: '1px solid var(--dark-border)', paddingTop: '2rem', textAlign: 'center' }}>
-                    <p style={{ color: 'var(--dark-text-secondary)', fontSize: '0.875rem' }}>
-                        &copy; {new Date().getFullYear()} InfraReport. All rights reserved. Built for better maintenance.
+                <div className="border-t border-slate-800 pt-8 text-center">
+                    <p className="text-slate-500 text-sm">
+                        &copy; {new Date().getFullYear()} InfraReport. All rights reserved. Built for better civic engagement.
                     </p>
                 </div>
             </div>

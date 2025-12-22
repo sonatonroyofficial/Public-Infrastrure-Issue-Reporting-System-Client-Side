@@ -9,8 +9,8 @@ import Dashboard from './pages/Dashboard';
 import ReportIssue from './pages/ReportIssue';
 import MyIssues from './pages/MyIssues';
 import AllIssues from './pages/AllIssues';
+import IssueDetails from './pages/IssueDetails';
 import NotFound from './pages/NotFound';
-import './App.css';
 
 // Protected Route Component
 const ProtectedRoute = ({ children, allowedRoles }) => {
@@ -38,14 +38,15 @@ const ProtectedRoute = ({ children, allowedRoles }) => {
 function AppContent() {
   return (
     <Router>
-      <div className="app">
+      <div className="flex flex-col min-h-screen font-sans text-gray-900 antialiased">
         <Navbar />
-        <main className="main-content">
+        <main className="flex-grow pt-[72px]">
           <Routes>
             <Route path="/" element={<Home />} />
             <Route path="/login" element={<Login />} />
             <Route path="/register" element={<Register />} />
             <Route path="/issues" element={<AllIssues />} />
+            <Route path="/issues/:id" element={<IssueDetails />} />
 
             <Route
               path="/dashboard"

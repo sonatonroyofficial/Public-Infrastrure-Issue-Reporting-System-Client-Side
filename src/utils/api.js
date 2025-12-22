@@ -54,6 +54,7 @@ export const issueAPI = {
     updateStatus: (id, status, comment) => api.patch(`/issues/${id}/status`, { status, comment }),
     addComment: (id, comment) => api.post(`/issues/${id}/comments`, { comment }),
     deleteIssue: (id) => api.delete(`/issues/${id}`),
+    upvoteIssue: (id) => api.put(`/issues/${id}/upvote`),
 };
 
 // User APIs
