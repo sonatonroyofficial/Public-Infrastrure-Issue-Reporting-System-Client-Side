@@ -15,6 +15,8 @@ import ManageIssues from './pages/ManageIssues';
 import ManageUsers from './pages/ManageUsers';
 import ManageStaff from './pages/ManageStaff';
 import Payments from './pages/Payments';
+import About from './pages/About';
+import Contact from './pages/Contact';
 import IssueDetails from './pages/IssueDetails';
 import NotFound from './pages/NotFound';
 
@@ -51,6 +53,8 @@ function AppContent() {
             <Route path="/" element={<Home />} />
             <Route path="/login" element={<Login />} />
             <Route path="/register" element={<Register />} />
+            <Route path="/about" element={<About />} />
+            <Route path="/contact" element={<Contact />} />
             <Route path="/issues" element={<AllIssues />} />
             <Route path="/issues/:id" element={<IssueDetails />} />
 

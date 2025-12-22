@@ -78,4 +78,8 @@ export const statsAPI = {
     getDashboardStats: () => api.get('/stats'),
 };
 
+export const contactAPI = {
+    sendMessage: (data) => api.post('/contact', data),
+};
+
 export default api;
