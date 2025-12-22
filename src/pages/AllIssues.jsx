@@ -3,6 +3,22 @@ import { Link, useNavigate } from 'react-router-dom';
 import { issueAPI } from '../utils/api';
 import { useAuth } from '../context/AuthContext';
 import { FaEye, FaSearch, FaFilter, FaMapMarkerAlt, FaCalendarAlt, FaThumbsUp } from 'react-icons/fa';
+import { motion } from 'framer-motion';
+
+const containerVariants = {
+    hidden: { opacity: 0 },
+    visible: {
+        opacity: 1,
+        transition: {
+            staggerChildren: 0.1
+        }
+    }
+};
+
+const itemVariants = {
+    hidden: { opacity: 0, y: 20 },
+    visible: { opacity: 1, y: 0 }
+};
 
 const AllIssues = () => {
     const navigate = useNavigate();
@@ -23,11 +39,11 @@ const AllIssues = () => {
         search: ''
     });
 
-    // Debounce search and reload on filter/page change
     useEffect(() => {
         const timer = setTimeout(() => {
             loadIssues();
         }, 500);
+
         return () => clearTimeout(timer);
     }, [filters, pagination.currentPage]);
 
@@ -54,7 +70,6 @@ const AllIssues = () => {
             }
         } catch (error) {
             console.error('Error loading issues:', error);
-            // Default empty if error
             setIssues([]);
         } finally {
             setLoading(false);
@@ -67,7 +82,6 @@ const AllIssues = () => {
             ...prev,
             [name]: value
         }));
-        // Reset to page 1 on filter change
         setPagination(prev => ({ ...prev, currentPage: 1 }));
     };
 
@@ -79,7 +93,7 @@ const AllIssues = () => {
     };
 
     const handleUpvote = async (e, issue) => {
-        e.preventDefault(); // Prevent navigation if button inside link
+        e.preventDefault();
         e.stopPropagation();
 
         if (!isAuthenticated) {
@@ -222,13 +236,22 @@ const AllIssues = () => {
                     </div>
                 ) : (
                     <>
-                        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8 mb-12">
+                        <motion.div
+                            className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8 mb-12"
+                            variants={containerVariants}
+                            initial="hidden"
+                            animate="visible"
+                        >
                             {issues.map((issue) => {
                                 const isOwner = user?.userId === issue.citizenId;
                                 const hasUpvoted = issue.upvotedBy?.includes(user?.userId);
 
                                 return (
-                                    <div key={issue._id} className="bg-white rounded-2xl shadow-sm border border-gray-100 hover:shadow-xl hover:-translate-y-1 transition-all duration-300 flex flex-col h-full overflow-hidden group">
+                                    <motion.div
+                                        key={issue._id}
+                                        className="bg-white rounded-2xl shadow-sm border border-gray-100 hover:shadow-xl hover:-translate-y-1 transition-all duration-300 flex flex-col h-full overflow-hidden group"
+                                        variants={itemVariants}
+                                    >
                                         {/* Image */}
                                         <div className="h-48 w-full bg-gray-100 relative overflow-hidden">
                                             {issue.photos && issue.photos.length > 0 ? (
@@ -294,10 +317,10 @@ const AllIssues = () => {
                                                 </Link>
                                             </div>
                                         </div>
-                                    </div>
+                                    </motion.div>
                                 );
                             })}
-                        </div>
+                        </motion.div>
 
                         {/* Pagination Controls */}
                         {pagination.totalPages > 1 && (

@@ -32,7 +32,10 @@ api.interceptors.response.use(
             // Token expired or invalid
             localStorage.removeItem('token');
             localStorage.removeItem('user');
-            window.location.href = '/login';
+            // Check if we are already on login page to avoid loop (though href change will refresh)
+            if (window.location.pathname !== '/login') {
+                window.location.href = '/login';
+            }
         }
         return Promise.reject(error);
     }
@@ -50,7 +53,7 @@ export const issueAPI = {
     createIssue: (data) => api.post('/issues', data),
     getAllIssues: (params) => api.get('/issues', { params }),
     getIssueById: (id) => api.get(`/issues/${id}`),
-    assignIssue: (id, staffId) => api.put(`/issues/${id}/assign`, { staffId }), // Updated from PATCH to PUT
+    assignIssue: (id, staffId) => api.put(`/issues/${id}/assign`, { staffId }),
     rejectIssue: (id) => api.put(`/issues/${id}/reject`),
     updateStatus: (id, status, comment) => api.patch(`/issues/${id}/status`, { status, comment }),
     addComment: (id, comment) => api.post(`/issues/${id}/comments`, { comment }),
@@ -67,7 +70,7 @@ export const userAPI = {
     blockUser: (id, isBlocked) => api.patch(`/users/${id}/block`, { isBlocked }),
     deleteUser: (id) => api.delete(`/users/${id}`),
     createStaff: (data) => api.post('/staff', data),
-    getPayments: () => api.get('/payments'), // Adding this for Payments page
+    getPayments: () => api.get('/payments'),
 };
 
 // Stats APIs
