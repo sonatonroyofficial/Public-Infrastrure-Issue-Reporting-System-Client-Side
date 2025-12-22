@@ -2,6 +2,8 @@ import { useState } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
 import { FaEnvelope, FaLock, FaSignInAlt, FaGoogle } from 'react-icons/fa';
+import { auth, googleProvider } from '../firebase/firebase.config';
+import { signInWithPopup } from 'firebase/auth';
 import './Auth.css';
 
 const Login = () => {
@@ -23,9 +25,21 @@ const Login = () => {
         setError('');
     };
 
-    const handleGoogleLogin = () => {
-        // Placeholder for future Google Auth integration
-        alert("Google Login is coming soon! Please use email/password for now.");
+    const handleGoogleLogin = async () => {
+        try {
+            const result = await signInWithPopup(auth, googleProvider);
+            const user = result.user;
+            console.log("Google User:", user);
+            alert(`Welcome ${user.displayName}! Google Login successful (Client-side). Backend integration needed for full session.`);
+
+            // In a real app, you would send user.accessToken to your backend here
+            // const response = await api.post('/auth/google', { token: user.accessToken });
+            // loginWithToken(response.data.token);
+
+        } catch (error) {
+            console.error("Google Login Error:", error);
+            setError("Failed to sign in with Google. Please try again.");
+        }
     };
 
     const handleSubmit = async (e) => {
