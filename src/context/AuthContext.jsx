@@ -1,5 +1,6 @@
 import { createContext, useContext, useState, useEffect } from 'react';
 import { authAPI } from '../utils/api';
+import toast from 'react-hot-toast';
 
 const AuthContext = createContext(null);
 
@@ -35,6 +36,7 @@ export const AuthProvider = ({ children }) => {
     }, []);
 
     const login = async (email, password) => {
+        const toastId = toast.loading('Logging in...');
         try {
             const response = await authAPI.login({ email, password });
             const { token, user } = response.data;
@@ -45,17 +47,46 @@ export const AuthProvider = ({ children }) => {
             setToken(token);
             setUser(user);
 
+            toast.success(`Welcome back, ${user.name}!`, { id: toastId });
             return { success: true, user };
         } catch (error) {
             console.error('Login error:', error);
+            const errorMessage = error.response?.data?.message || 'Login failed. Please try again.';
+            toast.error(errorMessage, { id: toastId });
             return {
                 success: false,
-                error: error.response?.data?.message || 'Login failed. Please try again.'
+                error: errorMessage
+            };
+        }
+    };
+
+    const googleLogin = async (firebaseIdToken) => {
+        const toastId = toast.loading('Verifying Google Account...');
+        try {
+            const response = await authAPI.googleLogin(firebaseIdToken);
+            const { token, user } = response.data;
+
+            localStorage.setItem('token', token);
+            localStorage.setItem('user', JSON.stringify(user));
+
+            setToken(token);
+            setUser(user);
+
+            toast.success(`Welcome back, ${user.name}!`, { id: toastId });
+            return { success: true, user };
+        } catch (error) {
+            console.error('Google Login error:', error);
+            const errorMessage = error.response?.data?.message || 'Google Login failed.';
+            toast.error(errorMessage, { id: toastId });
+            return {
+                success: false,
+                error: errorMessage
             };
         }
     };
 
     const register = async (userData) => {
+        const toastId = toast.loading('Creating account...');
         try {
             const response = await authAPI.register(userData);
             const { token, user } = response.data;
@@ -66,12 +97,15 @@ export const AuthProvider = ({ children }) => {
             setToken(token);
             setUser(user);
 
+            toast.success('Account created successfully!', { id: toastId });
             return { success: true, user };
         } catch (error) {
             console.error('Registration error:', error);
+            const errorMessage = error.response?.data?.message || 'Registration failed. Please try again.';
+            toast.error(errorMessage, { id: toastId });
             return {
                 success: false,
-                error: error.response?.data?.message || 'Registration failed. Please try again.'
+                error: errorMessage
             };
         }
     };
@@ -81,6 +115,7 @@ export const AuthProvider = ({ children }) => {
         localStorage.removeItem('user');
         setToken(null);
         setUser(null);
+        toast.success('Logged out successfully');
     };
 
     const updateUser = (updatedUser) => {
@@ -104,6 +139,7 @@ export const AuthProvider = ({ children }) => {
         isCitizen,
         isPremium,
         login,
+        googleLogin,
         register,
         logout,
         updateUser,

@@ -85,7 +85,7 @@ const Footer = () => {
 
                 <div className="border-t border-slate-800 pt-8 text-center">
                     <p className="text-slate-500 text-sm">
-                        &copy; {new Date().getFullYear()} InfraReport. All rights reserved. Built for better civic engagement.
+                        &copy; {new Date().getFullYear()} InfraReport. All rights reserved.
                     </p>
                 </div>
             </div>

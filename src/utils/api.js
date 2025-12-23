@@ -1,6 +1,6 @@
 import axios from 'axios';
 
-const API_URL = 'https://public-infrastructure-issue-reporti-silk.vercel.app/api';
+const API_URL = 'http://localhost:5000/api';
 
 // Create axios instance
 const api = axios.create({
@@ -45,6 +45,7 @@ api.interceptors.response.use(
 export const authAPI = {
     register: (data) => api.post('/auth/register', data),
     login: (data) => api.post('/auth/login', data),
+    googleLogin: (token) => api.post('/auth/google', { token }),
     getProfile: () => api.get('/auth/profile'),
 };
 

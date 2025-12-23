@@ -13,7 +13,7 @@ const Login = () => {
     const [error, setError] = useState('');
     const [isLoading, setIsLoading] = useState(false);
 
-    const { login } = useAuth();
+    const { login, googleLogin } = useAuth();
     const navigate = useNavigate();
 
     const handleChange = (e) => {
@@ -26,18 +26,25 @@ const Login = () => {
 
     const handleGoogleLogin = async () => {
         if (!auth) {
-            alert("Firebase is not initialized. Please restart your development server to load the environment variables.");
+            setError("Firebase configuration missing. Please checking .env files.");
             return;
         }
         try {
             const result = await signInWithPopup(auth, googleProvider);
             const user = result.user;
-            console.log("Google User:", user);
-            alert(`Welcome ${user.displayName}! Google Login successful (Client-side). Backend integration needed for full session.`);
+            const token = await user.getIdToken();
 
-            // In a real app, you would send user.accessToken to your backend here
-            // const response = await api.post('/auth/google', { token: user.accessToken });
-            // loginWithToken(response.data.token);
+            const authResult = await googleLogin(token);
+
+            if (authResult.success) {
+                if (authResult.user.role === 'citizen') {
+                    navigate('/my-issues');
+                } else {
+                    navigate('/dashboard');
+                }
+            } else {
+                setError(authResult.error);
+            }
 
         } catch (error) {
             console.error("Google Login Error:", error);

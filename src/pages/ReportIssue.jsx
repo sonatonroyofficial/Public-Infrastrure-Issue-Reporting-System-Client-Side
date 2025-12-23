@@ -2,6 +2,7 @@ import { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { issueAPI } from '../utils/api';
 import { FaCloudUploadAlt, FaMapMarkerAlt, FaExclamationCircle } from 'react-icons/fa';
+import toast from 'react-hot-toast';
 
 const ReportIssue = () => {
     const navigate = useNavigate();
@@ -33,15 +34,17 @@ const ReportIssue = () => {
         e.preventDefault();
         setLoading(true);
         setError('');
+        const toastId = toast.loading('Submitting issue...');
 
         try {
             await issueAPI.createIssue(formData);
-            alert('Issue reported successfully!');
+            toast.success('Issue reported successfully!', { id: toastId });
             navigate('/my-issues');
         } catch (err) {
             console.error('Report error:', err);
             const message = err.response?.data?.message || 'Failed to report issue';
             setError(message);
+            toast.error(message, { id: toastId });
 
             // Handle Upgrade Requirement
             if (err.response?.data?.requiresUpgrade) {
