@@ -1,64 +1,53 @@
-import { useState, useEffect } from 'react';
+import { useState } from 'react';
 import { issueAPI } from '../utils/api';
 import { FaEye, FaSortAmountDown, FaFilter, FaCheckCircle, FaSpinner } from 'react-icons/fa';
 import { Link } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
+import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
+import toast from 'react-hot-toast';
 
 const AssignedIssues = () => {
     const { user } = useAuth();
-    const [issues, setIssues] = useState([]);
-    const [loading, setLoading] = useState(true);
+    const queryClient = useQueryClient();
     const [searchTerm, setSearchTerm] = useState('');
     const [filterStatus, setFilterStatus] = useState('all');
-    const [updating, setUpdating] = useState(null);
 
-    useEffect(() => {
-        fetchAssignedIssues();
-    }, []);
-
-    const fetchAssignedIssues = async () => {
-        try {
-            // Fetch all issues and filter for assigned on client side or use specific endpoint
-            // Since we don't have a specific endpoint yet, we'll fetch all and filter.
-            // Ideally backend should support ?assignedTo=me
-            const response = await issueAPI.getAllIssues();
-
+    // Fetch Assigned Issues
+    const { data: issues = [], isLoading } = useQuery({
+        queryKey: ['assignedIssues', user.userId],
+        queryFn: () => issueAPI.getAllIssues().then(res => {
             // Filter strictly for this staff member
-            const myIssues = response.data.issues.filter(i => i.assignedTo === user.userId);
+            // Ideally backend should support ?assignedTo=me, but logic remains same as original
+            const myIssues = res.data.issues.filter(i => i.assignedTo === user.userId);
 
             // Sort: Boosted/High priority first
-            const sorted = myIssues.sort((a, b) => {
-                // Boost override
+            return myIssues.sort((a, b) => {
                 if (a.isBoosted && !b.isBoosted) return -1;
                 if (!a.isBoosted && b.isBoosted) return 1;
-
-                // Priority Check
                 const priorityWeight = { high: 3, medium: 2, low: 1 };
                 return priorityWeight[b.priority] - priorityWeight[a.priority];
             });
+        }),
+        enabled: !!user.userId
+    });
 
-            setIssues(sorted);
-        } catch (error) {
-            console.error('Error fetching assigned issues:', error);
-        } finally {
-            setLoading(false);
+    // Update Status Mutation
+    const updateStatusMutation = useMutation({
+        mutationFn: ({ issueId, newStatus }) =>
+            issueAPI.updateStatus(issueId, newStatus, `Status updated to ${newStatus}`),
+        onSuccess: (data, variables) => {
+            queryClient.invalidateQueries(['assignedIssues']);
+            // Also invalidate single issue detail if it catches it
+            queryClient.invalidateQueries(['issue', variables.issueId]);
+            toast.success(`Issue marked as ${variables.newStatus}`);
+        },
+        onError: (error) => {
+            toast.error('Failed to update: ' + (error.response?.data?.message || 'Error occurred'));
         }
-    };
+    });
 
-    const handleStatusUpdate = async (issueId, newStatus) => {
-        setUpdating(issueId);
-        try {
-            await issueAPI.updateStatus(issueId, newStatus, `Status updated to ${newStatus}`);
-            // Update local state
-            setIssues(issues.map(i =>
-                i._id === issueId ? { ...i, status: newStatus } : i
-            ));
-            alert(`Issue marked as ${newStatus}`);
-        } catch (error) {
-            alert('Failed to update: ' + error.response?.data?.message);
-        } finally {
-            setUpdating(null);
-        }
+    const handleStatusUpdate = (issueId, newStatus) => {
+        updateStatusMutation.mutate({ issueId, newStatus });
     };
 
     const filteredIssues = issues.filter(issue => {
@@ -68,14 +57,11 @@ const AssignedIssues = () => {
         return matchesStatus && matchesSearch;
     });
 
-    const getNextStatusOptions = (currentStatus) => {
-        // Workflow: Pending -> In-Progress -> Working -> Resolved -> Closed
-        const flow = ['pending', 'assigned', 'in-progress', 'working', 'resolved', 'closed'];
-        const options = flow.filter(s => s !== currentStatus && s !== 'pending'); // Can't go back to pending usually?
-        return options;
-    };
-
-    if (loading) return <div className="text-center py-10">Loading assignments...</div>;
+    if (isLoading) return (
+        <div className="flex justify-center items-center min-h-[50vh]">
+            <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600"></div>
+        </div>
+    );
 
     return (
         <div className="min-h-screen bg-gray-50 py-8 px-4">
@@ -166,7 +152,7 @@ const AssignedIssues = () => {
                                             className="px-2 py-1 border border-gray-300 rounded text-sm bg-white hover:border-blue-500 cursor-pointer disabled:opacity-50"
                                             value=""
                                             onChange={(e) => handleStatusUpdate(issue._id, e.target.value)}
-                                            disabled={updating === issue._id}
+                                            disabled={updateStatusMutation.isLoading}
                                         >
                                             <option value="" disabled>Change Status...</option>
                                             <option value="in-progress">In Progress</option>
@@ -174,7 +160,6 @@ const AssignedIssues = () => {
                                             <option value="resolved">Resolved</option>
                                             <option value="closed">Closed</option>
                                         </select>
-                                        {updating === issue._id && <FaSpinner className="inline ml-2 animate-spin text-blue-500" />}
                                     </td>
                                     <td className="px-6 py-4 text-right">
                                         <Link to={`/issues/${issue._id}`} className="text-blue-600 hover:text-blue-800 font-medium text-sm">

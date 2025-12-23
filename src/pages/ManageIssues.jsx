@@ -1,84 +1,81 @@
-import { useState, useEffect } from 'react';
+import { useState } from 'react';
 import { userAPI, issueAPI } from '../utils/api';
+import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
+import toast from 'react-hot-toast';
 import { FaTasks, FaUserCheck, FaBan, FaCheck, FaTimes, FaSpinner, FaSortAmountDown } from 'react-icons/fa';
 import { Link } from 'react-router-dom';
 
 const ManageIssues = () => {
-    const [issues, setIssues] = useState([]);
-    const [staff, setStaff] = useState([]);
-    const [loading, setLoading] = useState(true);
+    const queryClient = useQueryClient();
     const [assignModal, setAssignModal] = useState({ isOpen: false, issueId: null });
     const [selectedStaff, setSelectedStaff] = useState('');
-    const [actionLoading, setActionLoading] = useState(false);
 
-    useEffect(() => {
-        loadData();
-    }, []);
-
-    const loadData = async () => {
-        try {
-            const [issuesRes, staffRes] = await Promise.all([
-                issueAPI.getAllIssues(),
-                userAPI.getAllUsers({ role: 'staff' })
-            ]);
-
+    // Fetch Issues
+    const { data: issues = [], isLoading: issuesLoading } = useQuery({
+        queryKey: ['allIssuesAdmin'],
+        queryFn: () => issueAPI.getAllIssues().then(res => {
             // Sort issues: Boosted first, then by date
-            const sortedIssues = issuesRes.data.issues.sort((a, b) => {
+            return res.data.issues.sort((a, b) => {
                 if (a.isBoosted && !b.isBoosted) return -1;
                 if (!a.isBoosted && b.isBoosted) return 1;
                 return new Date(b.createdAt) - new Date(a.createdAt);
             });
+        })
+    });
 
-            setIssues(sortedIssues);
-            setStaff(staffRes.data.users);
-        } catch (error) {
-            console.error('Error loading data:', error);
-        } finally {
-            setLoading(false);
+    // Fetch Staff
+    const { data: staff = [], isLoading: staffLoading } = useQuery({
+        queryKey: ['staffUsers'],
+        queryFn: () => userAPI.getAllUsers({ role: 'staff' }).then(res => res.data.users || [])
+    });
+
+    // Assign Mutation
+    const assignMutation = useMutation({
+        mutationFn: ({ issueId, staffId }) => issueAPI.assignIssue(issueId, staffId),
+        onSuccess: () => {
+            queryClient.invalidateQueries(['allIssuesAdmin']);
+            setAssignModal({ isOpen: false, issueId: null });
+            toast.success('Issue assigned successfully');
+        },
+        onError: (error) => {
+            toast.error('Error assigning issue: ' + (error.response?.data?.message || 'Failed'));
         }
-    };
+    });
+
+    // Reject Mutation
+    const rejectMutation = useMutation({
+        mutationFn: (issueId) => issueAPI.rejectIssue(issueId),
+        onSuccess: () => {
+            queryClient.invalidateQueries(['allIssuesAdmin']);
+            toast.success('Issue rejected successfully');
+        },
+        onError: (error) => {
+            toast.error('Error rejecting issue: ' + (error.response?.data?.message || 'Failed'));
+        }
+    });
 
     const handleAssignClick = (issueId) => {
         setAssignModal({ isOpen: true, issueId });
         setSelectedStaff('');
     };
 
-    const confirmAssign = async () => {
-        if (!selectedStaff) return alert('Please select a staff member');
-        setActionLoading(true);
-        try {
-            await issueAPI.assignIssue(assignModal.issueId, selectedStaff);
-
-            // Update UI locally
-            const assignedStaffMember = staff.find(s => s._id === selectedStaff);
-            setIssues(issues.map(i =>
-                i._id === assignModal.issueId
-                    ? { ...i, assignedTo: selectedStaff, assignedStaffName: assignedStaffMember.name, status: 'assigned' }
-                    : i
-            ));
-
-            alert('Issue assigned successfully');
-            setAssignModal({ isOpen: false, issueId: null });
-        } catch (error) {
-            alert('Error assigning issue: ' + error.response?.data?.message);
-        } finally {
-            setActionLoading(false);
-        }
+    const confirmAssign = () => {
+        if (!selectedStaff) return toast.error('Please select a staff member');
+        assignMutation.mutate({ issueId: assignModal.issueId, staffId: selectedStaff });
     };
 
-    const handleReject = async (issueId) => {
+    const handleReject = (issueId) => {
         if (!window.confirm('Are you sure you want to REJECT this issue? This will notify the citizen.')) return;
-        try {
-            await issueAPI.rejectIssue(issueId);
-            setIssues(issues.map(i =>
-                i._id === issueId ? { ...i, status: 'rejected' } : i
-            ));
-        } catch (error) {
-            alert('Error rejecting issue: ' + error.response?.data?.message);
-        }
+        rejectMutation.mutate(issueId);
     };
 
-    if (loading) return <div className="text-center py-10">Loading management console...</div>;
+    const loading = issuesLoading || staffLoading;
+
+    if (loading) return (
+        <div className="flex justify-center items-center min-h-[50vh]">
+            <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600"></div>
+        </div>
+    );
 
     return (
         <div className="p-6 max-w-7xl mx-auto">
@@ -197,10 +194,10 @@ const ManageIssues = () => {
                             </button>
                             <button
                                 onClick={confirmAssign}
-                                disabled={actionLoading}
+                                disabled={assignMutation.isLoading}
                                 className="flex-1 px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 disabled:opacity-70 flex justify-center items-center"
                             >
-                                {actionLoading ? <FaSpinner className="animate-spin" /> : 'Confirm Assignment'}
+                                {assignMutation.isLoading ? <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-white"></div> : 'Confirm Assignment'}
                             </button>
                         </div>
                     </div>

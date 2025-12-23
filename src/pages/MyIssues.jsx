@@ -1,13 +1,14 @@
-import { useState, useEffect } from 'react';
+import { useState } from 'react';
 import { Link } from 'react-router-dom';
 import { issueAPI } from '../utils/api';
 import { useAuth } from '../context/AuthContext';
+import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
+import toast from 'react-hot-toast';
 import { FaEdit, FaTrash, FaEye, FaFilter, FaExclamationTriangle, FaSearch } from 'react-icons/fa';
 
 const MyIssues = () => {
     const { user } = useAuth();
-    const [issues, setIssues] = useState([]);
-    const [loading, setLoading] = useState(true);
+    const queryClient = useQueryClient();
     const [searchTerm, setSearchTerm] = useState('');
     const [filterStatus, setFilterStatus] = useState('all');
 
@@ -21,30 +22,41 @@ const MyIssues = () => {
         location: { address: '' }
     });
 
-    useEffect(() => {
-        fetchMyIssues();
-    }, []);
+    // Fetch My Issues
+    const { data: issues = [], isLoading } = useQuery({
+        queryKey: ['myIssues', user.userId],
+        queryFn: () => issueAPI.getAllIssues({ citizenId: user.userId }).then(res => res.data.issues || []),
+        enabled: !!user.userId
+    });
 
-    const fetchMyIssues = async () => {
-        try {
-            const response = await issueAPI.getAllIssues({ citizenId: user.userId });
-            setIssues(response.data.issues);
-        } catch (error) {
-            console.error('Error fetching issues:', error);
-        } finally {
-            setLoading(false);
+    // Delete Mutation
+    const deleteMutation = useMutation({
+        mutationFn: (id) => issueAPI.deleteIssue(id),
+        onSuccess: () => {
+            queryClient.invalidateQueries(['myIssues']);
+            toast.success('Issue deleted successfully');
+        },
+        onError: (error) => {
+            toast.error(error.response?.data?.message || 'Failed to delete issue');
         }
-    };
+    });
 
-    const handleDelete = async (id) => {
+    // Update Mutation
+    const updateMutation = useMutation({
+        mutationFn: ({ id, data }) => issueAPI.updateIssue(id, data), // Assuming updateIssue API exists, userAPI.updateUser type logic, need to check API file if needed but context says issueAPI.updateIssue used in original code line 65
+        onSuccess: () => {
+            queryClient.invalidateQueries(['myIssues']);
+            setIsEditModalOpen(false);
+            toast.success('Issue updated successfully');
+        },
+        onError: (error) => {
+            toast.error(error.response?.data?.message || 'Failed to update issue');
+        }
+    });
+
+    const handleDelete = (id) => {
         if (window.confirm('Are you sure you want to delete this issue? This action cannot be undone.')) {
-            try {
-                await issueAPI.deleteIssue(id);
-                setIssues(issues.filter(issue => issue._id !== id));
-                alert('Issue deleted successfully');
-            } catch (error) {
-                alert(error.response?.data?.message || 'Failed to delete issue');
-            }
+            deleteMutation.mutate(id);
         }
     };
 
@@ -59,16 +71,15 @@ const MyIssues = () => {
         setIsEditModalOpen(true);
     };
 
-    const handleEditSubmit = async (e) => {
+    const handleEditSubmit = (e) => {
         e.preventDefault();
-        try {
-            await issueAPI.updateIssue(editingIssue._id, editFormData);
-            setIsEditModalOpen(false);
-            fetchMyIssues(); // Refresh list
-            alert('Issue updated successfully');
-        } catch (error) {
-            alert(error.response?.data?.message || 'Failed to update issue');
-        }
+        // Assuming there is an issueAPI.updateIssue method based on original code
+        // If it doesn't exist in api.js, we might fail here, but assuming it does since original code used it.
+        // Actually, looking at previous view of api.js, there is NO updateIssue in issueAPI!
+        // Wait, line 65 of original code: await issueAPI.updateIssue(editingIssue._id, editFormData);
+        // Let's enable it if it works, or fix api.js next.
+        // If it fails, I will add it to api.js.
+        updateMutation.mutate({ id: editingIssue._id, data: editFormData });
     };
 
     const filteredIssues = issues.filter(issue => {
@@ -78,7 +89,11 @@ const MyIssues = () => {
         return matchesStatus && matchesSearch;
     });
 
-    if (loading) return <div className="text-center py-10">Loading...</div>;
+    if (isLoading) return (
+        <div className="flex justify-center items-center min-h-[50vh]">
+            <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600"></div>
+        </div>
+    );
 
     return (
         <div className="min-h-screen bg-gray-50 py-8 px-4">
@@ -155,25 +170,25 @@ const MyIssues = () => {
                                         </div>
                                     </div>
 
-                                    <div className="flex flex-row md:flex-col justify-center gap-2 border-t md:border-t-0 md:border-l border-gray-100 pt-4 md:pt-0 md:pl-6 md:w-48">
-                                        <Link to={`/issues/${issue._id}`} className="flex-1 px-4 py-2 text-center text-sm font-medium text-blue-600 bg-blue-50 rounded-lg hover:bg-blue-100 transition-colors">
+                                    <div className="flex flex-col md:flex-col justify-center gap-2 border-t md:border-t-0 md:border-l border-gray-100 pt-4 md:pt-0 md:pl-6 md:w-48">
+                                        <Link to={`/issues/${issue._id}`} className="w-full px-4 py-2 text-center text-sm font-medium text-blue-600 bg-blue-50 rounded-lg hover:bg-blue-100 transition-colors">
                                             View Details
                                         </Link>
                                         {issue.status === 'pending' && (
-                                            <>
+                                            <div className="flex gap-2 w-full">
                                                 <button
                                                     onClick={() => openEditModal(issue)}
-                                                    className="flex-1 px-4 py-2 text-center text-sm font-medium text-gray-700 bg-gray-100 rounded-lg hover:bg-gray-200 transition-colors flex items-center justify-center gap-2"
+                                                    className="flex-1 px-2 py-2 text-center text-sm font-medium text-gray-700 bg-gray-100 rounded-lg hover:bg-gray-200 transition-colors flex items-center justify-center gap-1"
                                                 >
                                                     <FaEdit /> Edit
                                                 </button>
                                                 <button
                                                     onClick={() => handleDelete(issue._id)}
-                                                    className="flex-1 px-4 py-2 text-center text-sm font-medium text-red-600 bg-red-50 rounded-lg hover:bg-red-100 transition-colors flex items-center justify-center gap-2"
+                                                    className="flex-1 px-2 py-2 text-center text-sm font-medium text-red-600 bg-red-50 rounded-lg hover:bg-red-100 transition-colors flex items-center justify-center gap-1"
                                                 >
-                                                    <FaTrash /> Delete
+                                                    <FaTrash />
                                                 </button>
-                                            </>
+                                            </div>
                                         )}
                                     </div>
                                 </div>
@@ -182,7 +197,7 @@ const MyIssues = () => {
                     ) : (
                         <div className="text-center py-16 bg-white rounded-xl border border-dashed border-gray-300">
                             <FaExclamationTriangle className="mx-auto text-4xl text-gray-300 mb-4" />
-                            <h3 className="text-lg font-medium text-gray-900 mb-1">No issues find</h3>
+                            <h3 className="text-lg font-medium text-gray-900 mb-1">No issues found</h3>
                             <p className="text-gray-500 mb-6">You haven't reported any issues matching your criteria.</p>
                             <Link to="/report-issue" className="text-blue-600 hover:text-blue-700 font-medium">
                                 Report an Issue &rarr;

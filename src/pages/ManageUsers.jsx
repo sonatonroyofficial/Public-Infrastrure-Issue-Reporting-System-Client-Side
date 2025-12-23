@@ -1,46 +1,48 @@
-import { useState, useEffect } from 'react';
+import { useState } from 'react';
 import { userAPI } from '../utils/api';
+import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
+import toast from 'react-hot-toast';
 import { FaUserShield, FaBan, FaUnlock, FaCrown, FaCheck, FaTimes, FaSpinner } from 'react-icons/fa';
 
 const ManageUsers = () => {
-    const [users, setUsers] = useState([]);
-    const [loading, setLoading] = useState(true);
+    const queryClient = useQueryClient();
     const [actionLoading, setActionLoading] = useState(null);
 
-    useEffect(() => {
-        loadUsers();
-    }, []);
+    // Fetch Users
+    const { data: users = [], isLoading } = useQuery({
+        queryKey: ['citizenUsers'],
+        queryFn: () => userAPI.getAllUsers({ role: 'citizen' }).then(res => res.data.users || [])
+    });
 
-    const loadUsers = async () => {
-        try {
-            const response = await userAPI.getAllUsers({ role: 'citizen' });
-            setUsers(response.data.users);
-        } catch (error) {
-            console.error('Error loading users:', error);
-        } finally {
-            setLoading(false);
+    // Block/Unblock Mutation
+    const toggleBlockMutation = useMutation({
+        mutationFn: ({ userId, isBlocked }) => userAPI.blockUser(userId, isBlocked),
+        onSuccess: (data, variables) => {
+            queryClient.invalidateQueries(['citizenUsers']);
+            const action = variables.isBlocked ? 'blocked' : 'unblocked';
+            toast.success(`User ${action} successfully`);
+        },
+        onError: (error, variables) => {
+            const action = variables.isBlocked ? 'block' : 'unblock';
+            toast.error(`Error ${action}ing user: ` + (error.response?.data?.message || 'Failed'));
         }
-    };
+    });
 
-    const handleBlockToggle = async (userId, currentStatus, userName) => {
+    const handleBlockToggle = (userId, currentStatus, userName) => {
         const action = currentStatus ? 'Unblock' : 'Block';
         if (!window.confirm(`Are you sure you want to ${action} ${userName}?`)) return;
 
         setActionLoading(userId);
-        try {
-            await userAPI.blockUser(userId, !currentStatus);
-            setUsers(users.map(u =>
-                u._id === userId ? { ...u, isBlocked: !currentStatus } : u
-            ));
-            alert(`User ${action}ed successfully`);
-        } catch (error) {
-            alert(`Error ${action}ing user: ` + error.response?.data?.message);
-        } finally {
-            setActionLoading(null);
-        }
+        toggleBlockMutation.mutate({ userId, isBlocked: !currentStatus }, {
+            onSettled: () => setActionLoading(null)
+        });
     };
 
-    if (loading) return <div className="text-center py-10">Loading users...</div>;
+    if (isLoading) return (
+        <div className="flex justify-center items-center min-h-[50vh]">
+            <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600"></div>
+        </div>
+    );
 
     return (
         <div className="p-6 max-w-7xl mx-auto">
@@ -105,8 +107,8 @@ const ManageUsers = () => {
                                         onClick={() => handleBlockToggle(u._id, u.isBlocked, u.name)}
                                         disabled={actionLoading === u._id}
                                         className={`p-2 rounded-lg transition-colors ${u.isBlocked
-                                                ? 'text-green-600 hover:bg-green-50'
-                                                : 'text-red-500 hover:bg-red-50'
+                                            ? 'text-green-600 hover:bg-green-50'
+                                            : 'text-red-500 hover:bg-red-50'
                                             }`}
                                         title={u.isBlocked ? 'Unblock User' : 'Block User'}
                                     >
@@ -126,5 +128,6 @@ const ManageUsers = () => {
         </div>
     );
 };
+
 
 export default ManageUsers;

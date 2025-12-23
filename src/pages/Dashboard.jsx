@@ -1,6 +1,8 @@
-import { useState, useEffect } from 'react';
+import { useState } from 'react';
 import { useAuth } from '../context/AuthContext';
 import { issueAPI, userAPI, statsAPI } from '../utils/api';
+import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
+import toast from 'react-hot-toast';
 import {
     FaUsers,
     FaExclamationTriangle,
@@ -17,56 +19,64 @@ import { BarChart, Bar, XAxis, YAxis, Tooltip, ResponsiveContainer, CartesianGri
 
 const Dashboard = () => {
     const { user } = useAuth();
-    const [stats, setStats] = useState(null);
-    const [issues, setIssues] = useState([]);
-    const [staff, setStaff] = useState([]);
-    const [loading, setLoading] = useState(true);
+    const queryClient = useQueryClient();
     const [filterStatus, setFilterStatus] = useState('all');
     const [searchTerm, setSearchTerm] = useState('');
 
-    useEffect(() => {
-        loadDashboardData();
-    }, []);
+    // Fetch Dashboard Stats
+    const { data: stats, isLoading: statsLoading, isError: statsError, refetch: refetchStats } = useQuery({
+        queryKey: ['dashboardStats'],
+        queryFn: () => statsAPI.getDashboardStats().then(res => res.data),
+    });
 
-    const loadDashboardData = async () => {
-        try {
-            const [statsRes, issuesRes, staffRes] = await Promise.all([
-                statsAPI.getDashboardStats(),
-                issueAPI.getAllIssues(),
-                user.role === 'admin' ? userAPI.getAllUsers({ role: 'staff' }) : Promise.resolve({ data: { users: [] } })
-            ]);
+    // Fetch All Issues
+    const { data: issues = [], isLoading: issuesLoading, refetch: refetchIssues } = useQuery({
+        queryKey: ['allIssues'],
+        queryFn: () => issueAPI.getAllIssues().then(res => Array.isArray(res.data.issues) ? res.data.issues : []),
+    });
 
-            setStats(statsRes.data);
-            setIssues(Array.isArray(issuesRes.data.issues) ? issuesRes.data.issues : []);
-            setStaff(staffRes.data.users || []);
-        } catch (error) {
-            console.error('Error loading dashboard:', error);
-            setStats(null);
-            // setIssues([]) is already default
-        } finally {
-            setLoading(false);
+    // Fetch Staff (Admin Only)
+    const { data: staff = [] } = useQuery({
+        queryKey: ['staffUsers'],
+        queryFn: () => userAPI.getAllUsers({ role: 'staff' }).then(res => res.data.users || []),
+        enabled: user.role === 'admin'
+    });
+
+    // Assign Issue Mutation
+    const assignMutation = useMutation({
+        mutationFn: ({ issueId, staffId }) => issueAPI.assignIssue(issueId, staffId),
+        onSuccess: () => {
+            queryClient.invalidateQueries(['allIssues']);
+            queryClient.invalidateQueries(['dashboardStats']);
+            toast.success('Issue assigned successfully!');
+        },
+        onError: (error) => {
+            toast.error('Error assigning issue: ' + (error.response?.data?.message || error.message));
         }
+    });
+
+    // Update Status Mutation
+    const statusMutation = useMutation({
+        mutationFn: ({ issueId, status }) => issueAPI.updateStatus(issueId, status, `Status updated to ${status}`),
+        onSuccess: () => {
+            queryClient.invalidateQueries(['allIssues']);
+            queryClient.invalidateQueries(['dashboardStats']);
+            toast.success('Status updated successfully!');
+        },
+        onError: (error) => {
+            toast.error('Error updating status: ' + (error.response?.data?.message || error.message));
+        }
+    });
+
+    const handleAssignIssue = (issueId, staffId) => {
+        assignMutation.mutate({ issueId, staffId });
     };
 
-    const handleAssignIssue = async (issueId, staffId) => {
-        try {
-            await issueAPI.assignIssue(issueId, staffId);
-            loadDashboardData();
-            alert('Issue assigned successfully!');
-        } catch (error) {
-            alert('Error assigning issue: ' + error.response?.data?.message);
-        }
+    const handleUpdateStatus = (issueId, status) => {
+        statusMutation.mutate({ issueId, status });
     };
 
-    const handleUpdateStatus = async (issueId, status) => {
-        try {
-            await issueAPI.updateStatus(issueId, status, `Status updated to ${status}`);
-            loadDashboardData();
-            alert('Status updated successfully!');
-        } catch (error) {
-            alert('Error updating status: ' + error.response?.data?.message);
-        }
-    };
+    const isLoading = statsLoading || issuesLoading;
 
     const filteredIssues = Array.isArray(issues) ? issues.filter(issue => {
         const matchesStatus = filterStatus === 'all' || issue.status === filterStatus;
@@ -75,7 +85,7 @@ const Dashboard = () => {
         return matchesStatus && matchesSearch;
     }) : [];
 
-    if (loading) {
+    if (isLoading) {
         return (
             <div className="flex justify-center items-center min-h-[calc(100vh-72px)]">
                 <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600"></div>
@@ -94,7 +104,7 @@ const Dashboard = () => {
                     </p>
                 </div>
                 <div className="flex gap-3">
-                    <button onClick={loadDashboardData} className="px-4 py-2 bg-white border border-gray-200 rounded-lg text-gray-600 hover:bg-gray-50 transition-colors text-sm font-medium">
+                    <button onClick={() => { refetchStats(); refetchIssues(); }} className="px-4 py-2 bg-white border border-gray-200 rounded-lg text-gray-600 hover:bg-gray-50 transition-colors text-sm font-medium">
                         Refresh Data
                     </button>
                     {user.role === 'citizen' && (
@@ -105,10 +115,10 @@ const Dashboard = () => {
                 </div>
             </div>
 
-            {!stats && !loading && (
+            {statsError && (
                 <div className="bg-red-50 p-6 rounded-xl border border-red-100 text-center">
                     <p className="text-red-600 font-medium">Unable to load dashboard statistics.</p>
-                    <button onClick={loadDashboardData} className="mt-2 text-sm text-red-700 underline hover:text-red-800">Try Again</button>
+                    <button onClick={refetchStats} className="mt-2 text-sm text-red-700 underline hover:text-red-800">Try Again</button>
                 </div>
             )}
 

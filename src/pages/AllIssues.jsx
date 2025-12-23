@@ -1,7 +1,9 @@
-import { useState, useEffect } from 'react';
+import { useState } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import { issueAPI } from '../utils/api';
 import { useAuth } from '../context/AuthContext';
+import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
+import toast from 'react-hot-toast';
 import { FaEye, FaSearch, FaFilter, FaMapMarkerAlt, FaCalendarAlt, FaThumbsUp } from 'react-icons/fa';
 import { motion } from 'framer-motion';
 
@@ -23,13 +25,8 @@ const itemVariants = {
 const AllIssues = () => {
     const navigate = useNavigate();
     const { user, isAuthenticated } = useAuth();
-    const [issues, setIssues] = useState([]);
-    const [loading, setLoading] = useState(true);
-    const [pagination, setPagination] = useState({
-        currentPage: 1,
-        totalPages: 1,
-        totalIssues: 0
-    });
+    const queryClient = useQueryClient();
+    const [page, setPage] = useState(1);
 
     // Filter States
     const [filters, setFilters] = useState({
@@ -39,42 +36,55 @@ const AllIssues = () => {
         search: ''
     });
 
-    useEffect(() => {
-        const timer = setTimeout(() => {
-            loadIssues();
-        }, 500);
-
-        return () => clearTimeout(timer);
-    }, [filters, pagination.currentPage]);
-
-    const loadIssues = async () => {
-        setLoading(true);
-        try {
+    // Fetch Issues with React Query
+    const { data, isLoading } = useQuery({
+        queryKey: ['issues', page, filters],
+        queryFn: () => {
             const activeFilters = Object.fromEntries(
                 Object.entries(filters).filter(([_, v]) => v !== '')
             );
+            return issueAPI.getAllIssues({ ...activeFilters, page, limit: 6 }).then(res => res.data);
+        },
+        keepPreviousData: true
+    });
 
-            // Add pagination params
-            activeFilters.page = pagination.currentPage;
-            activeFilters.limit = 6; // Limit per page
+    const issues = data?.issues || [];
+    const pagination = data?.pagination || { totalPages: 1 };
 
-            const response = await issueAPI.getAllIssues(activeFilters);
-            setIssues(response.data.issues || []);
+    // Upvote Mutation
+    const upvoteMutation = useMutation({
+        mutationFn: (issueId) => issueAPI.upvoteIssue(issueId),
+        onMutate: async (issueId) => {
+            await queryClient.cancelQueries(['issues', page, filters]);
+            const previousData = queryClient.getQueryData(['issues', page, filters]);
 
-            if (response.data.pagination) {
-                setPagination(prev => ({
-                    ...prev,
-                    totalPages: response.data.pagination.totalPages,
-                    totalIssues: response.data.pagination.totalIssues
-                }));
-            }
-        } catch (error) {
-            console.error('Error loading issues:', error);
-            setIssues([]);
-        } finally {
-            setLoading(false);
+            queryClient.setQueryData(['issues', page, filters], (old) => {
+                if (!old) return old;
+                return {
+                    ...old,
+                    issues: old.issues.map(issue => {
+                        if (issue._id === issueId) {
+                            return {
+                                ...issue,
+                                upvotes: (issue.upvotes || 0) + 1,
+                                upvotedBy: [...(issue.upvotedBy || []), user.userId]
+                            };
+                        }
+                        return issue;
+                    })
+                };
+            });
+
+            return { previousData };
+        },
+        onError: (err, issueId, context) => {
+            queryClient.setQueryData(['issues', page, filters], context.previousData);
+            toast.error("Failed to upvote. Please try again.");
+        },
+        onSettled: () => {
+            queryClient.invalidateQueries(['issues', page, filters]);
         }
-    };
+    });
 
     const handleFilterChange = (e) => {
         const { name, value } = e.target;
@@ -82,17 +92,17 @@ const AllIssues = () => {
             ...prev,
             [name]: value
         }));
-        setPagination(prev => ({ ...prev, currentPage: 1 }));
+        setPage(1);
     };
 
     const handlePageChange = (newPage) => {
         if (newPage >= 1 && newPage <= pagination.totalPages) {
-            setPagination(prev => ({ ...prev, currentPage: newPage }));
+            setPage(newPage);
             window.scrollTo({ top: 0, behavior: 'smooth' });
         }
     };
 
-    const handleUpvote = async (e, issue) => {
+    const handleUpvote = (e, issue) => {
         e.preventDefault();
         e.stopPropagation();
 
@@ -102,29 +112,16 @@ const AllIssues = () => {
         }
 
         if (issue.citizenId === user.userId) {
-            alert("You cannot upvote your own issue.");
+            toast.error("You cannot upvote your own issue.");
             return;
         }
 
         if (issue.upvotedBy?.includes(user.userId)) {
-            alert("You have already upvoted this issue.");
+            toast.error("You have already upvoted this issue.");
             return;
         }
 
-        try {
-            const response = await issueAPI.upvoteIssue(issue._id);
-            // Optimistic update
-            setIssues(prevIssues =>
-                prevIssues.map(i =>
-                    i._id === issue._id
-                        ? { ...i, upvotes: response.data.upvotes, upvotedBy: [...(i.upvotedBy || []), user.userId] }
-                        : i
-                )
-            );
-        } catch (error) {
-            console.error('Upvote failed:', error);
-            alert("Failed to upvote. Please try again.");
-        }
+        upvoteMutation.mutate(issue._id);
     };
 
     const getStatusColor = (status) => {
@@ -224,7 +221,7 @@ const AllIssues = () => {
                 </div>
 
                 {/* Issues Grid */}
-                {loading ? (
+                {isLoading ? (
                     <div className="flex justify-center items-center py-24">
                         <div className="w-12 h-12 border-4 border-gray-200 border-t-blue-600 rounded-full animate-spin"></div>
                     </div>

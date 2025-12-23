@@ -1,74 +1,63 @@
-import { useState, useEffect } from 'react';
-import { userAPI, issueAPI } from '../utils/api';
+import { useState } from 'react';
+import { userAPI } from '../utils/api';
+import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
+import toast from 'react-hot-toast';
 import { FaUserPlus, FaEdit, FaTrash, FaCheck, FaTimes, FaSpinner, FaUsers, FaUserShield } from 'react-icons/fa';
-import { initializeApp } from 'firebase/app';
-import { getAuth, createUserWithEmailAndPassword, updateProfile } from 'firebase/auth';
-
-// Temporary Firebase Config for Secondary App execution
-const firebaseConfig = {
-    apiKey: import.meta.env.VITE_FIREBASE_API_KEY,
-    authDomain: import.meta.env.VITE_FIREBASE_AUTH_DOMAIN,
-    projectId: import.meta.env.VITE_FIREBASE_PROJECT_ID,
-    storageBucket: import.meta.env.VITE_FIREBASE_STORAGE_BUCKET,
-    messagingSenderId: import.meta.env.VITE_FIREBASE_MESSAGING_SENDER_ID,
-    appId: import.meta.env.VITE_FIREBASE_APP_ID
-};
 
 const ManageStaff = () => {
-    const [staff, setStaff] = useState([]);
-    const [loading, setLoading] = useState(true);
+    const queryClient = useQueryClient();
     const [isAddModalOpen, setIsAddModalOpen] = useState(false);
-    const [formLoading, setFormLoading] = useState(false);
     const [formData, setFormData] = useState({
         name: '', email: '', password: '', phone: '', address: '', role: 'staff'
     });
 
-    useEffect(() => {
-        loadStaff();
-    }, []);
+    // Fetch Staff
+    const { data: staff = [], isLoading } = useQuery({
+        queryKey: ['staffList'],
+        queryFn: () => userAPI.getAllUsers({ role: 'staff' }).then(res => res.data.users || [])
+    });
 
-    const loadStaff = async () => {
-        try {
-            const response = await userAPI.getAllUsers({ role: 'staff' });
-            setStaff(response.data.users);
-        } catch (error) {
-            console.error('Error loading staff:', error);
-        } finally {
-            setLoading(false);
-        }
-    };
-
-    const handleCreateStaff = async (e) => {
-        e.preventDefault();
-        setFormLoading(true);
-
-        try {
-            await userAPI.createStaff(formData);
-            alert('Staff account created successfully!');
+    // Create Staff Mutation
+    const createStaffMutation = useMutation({
+        mutationFn: (data) => userAPI.createStaff(data),
+        onSuccess: () => {
+            queryClient.invalidateQueries(['staffList']);
+            toast.success('Staff account created successfully!');
             setIsAddModalOpen(false);
             setFormData({ name: '', email: '', password: '', phone: '', address: '', role: 'staff' });
-            loadStaff();
-
-        } catch (error) {
-            console.error('Error creating staff:', error);
-            alert('Error creating staff: ' + (error.response?.data?.message || error.message));
-        } finally {
-            setFormLoading(false);
+        },
+        onError: (error) => {
+            toast.error('Error creating staff: ' + (error.response?.data?.message || 'Failed'));
         }
+    });
+
+    // Delete Staff Mutation
+    const deleteStaffMutation = useMutation({
+        mutationFn: (id) => userAPI.deleteUser(id),
+        onSuccess: () => {
+            queryClient.invalidateQueries(['staffList']);
+            toast.success('Staff deleted successfully');
+        },
+        onError: (error) => {
+            toast.error('Error deleting staff: ' + (error.response?.data?.message || 'Failed'));
+        }
+    });
+
+    const handleCreateStaff = (e) => {
+        e.preventDefault();
+        createStaffMutation.mutate(formData);
     };
 
-    const handleDelete = async (id) => {
+    const handleDelete = (id) => {
         if (!window.confirm('Are you sure you want to delete this staff member? This cannot be undone.')) return;
-        try {
-            await userAPI.deleteUser(id);
-            alert('Staff deleted successfully');
-            loadStaff();
-        } catch (error) {
-            alert('Error deleting staff: ' + error.response?.data?.message);
-        }
+        deleteStaffMutation.mutate(id);
     };
 
-    if (loading) return <div className="text-center py-10">Loading staff...</div>;
+    if (isLoading) return (
+        <div className="flex justify-center items-center min-h-[50vh]">
+            <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600"></div>
+        </div>
+    );
 
     return (
         <div className="p-6 max-w-7xl mx-auto">
@@ -204,10 +193,10 @@ const ManageStaff = () => {
                                 </button>
                                 <button
                                     type="submit"
-                                    disabled={formLoading}
+                                    disabled={createStaffMutation.isLoading}
                                     className="flex-1 px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 disabled:opacity-70 flex justify-center items-center gap-2"
                                 >
-                                    {formLoading && <FaSpinner className="animate-spin" />}
+                                    {createStaffMutation.isLoading && <FaSpinner className="animate-spin" />}
                                     Create Account
                                 </button>
                             </div>
@@ -218,5 +207,6 @@ const ManageStaff = () => {
         </div>
     );
 };
+
 
 export default ManageStaff;
